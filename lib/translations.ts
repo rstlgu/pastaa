@@ -11,7 +11,7 @@ export const translations = {
     copied: 'Copiato!',
     
     // Homepage
-    appName: 'Pasta',
+    appName: 'Pastaa',
     appTagline: 'Condivisione testo sicura con crittografia end-to-end',
     textPlaceholder: 'Inserisci il testo da cifrare...',
     encryptAndShare: 'Cifra e Condividi',
@@ -101,7 +101,7 @@ export const translations = {
     copied: 'Copied!',
     
     // Homepage
-    appName: 'Pasta',
+    appName: 'Pastaa',
     appTagline: 'Secure text sharing with end-to-end encryption',
     textPlaceholder: 'Enter text to encrypt...',
     encryptAndShare: 'Encrypt & Share',

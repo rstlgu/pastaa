@@ -12,13 +12,13 @@ const righteous = Righteous({
 });
 
 export const metadata: Metadata = {
-  title: "Pasta - Text sharing",
+  title: "Pastaa - Text sharing",
   description: "Condividi testo in modo sicuro con crittografia end-to-end",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Pasta",
+    title: "Pastaa",
   },
 };
 

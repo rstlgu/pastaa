@@ -1,4 +1,4 @@
-# 🔐 Pasta - Secure Text Sharing
+# 🍝 Pastaa - Secure Text Sharing
 
 Web platform to securely share text with **end-to-end encryption** and **zero registration**.
 
@@ -113,7 +113,7 @@ npm start
 ## 📁 Project Structure
 
 ```
-pasta/
+pastaa/
 ├── app/
 │   ├── api/paste/          # API Routes
 │   ├── view/[id]/          # View page

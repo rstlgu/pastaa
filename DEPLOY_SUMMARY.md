@@ -48,7 +48,7 @@ git add .
 git commit -m "Initial commit"
 
 # 2. Push to GitHub
-git remote add origin https://github.com/your-user/pasta.git
+git remote add origin https://github.com/your-user/pastaa.git
 git push -u origin main
 
 # 3. On vercel.com:

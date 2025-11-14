@@ -81,7 +81,7 @@ file:./dev.db
 ### With PostgreSQL
 
 1. Install PostgreSQL locally
-2. Create a database: `createdb pasta`
+2. Create a database: `createdb pastaa`
 3. Copy `.env.example` to `.env`
 4. Modify `DATABASE_URL` in `.env` file
 5. Run migrations: `npm run db:push`

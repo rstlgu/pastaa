@@ -145,7 +145,7 @@ export default function HomePage() {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
           >
             <PastaLogo className="h-12 w-12 text-primary" />
-            <h1 className="text-3xl font-bold font-righteous tracking-wider">Pasta</h1>
+            <h1 className="text-3xl font-bold font-righteous tracking-wider">Pastaa</h1>
           </div>
           
           <div className="flex items-center gap-3">
@@ -155,7 +155,7 @@ export default function HomePage() {
                 <motion.a
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  href="https://github.com/rstlgu/pasta.git"
+                  href="https://github.com/rstlgu/pastaa.git"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors"
