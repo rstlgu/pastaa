@@ -1,60 +1,59 @@
-# ⚠️ Nota per Deploy su Vercel
+# ⚠️ Note for Vercel Deploy
 
 ## Database Configuration
 
-### Sviluppo Locale (Attuale)
+### Local Development (Current)
 - **Provider**: SQLite
 - **DATABASE_URL**: `file:./dev.db`
-- Configurato in `prisma/schema.prisma` come `provider = "sqlite"`
+- Configured in `prisma/schema.prisma` as `provider = "sqlite"`
 
-### Prima del Deploy su Vercel
+### Before Deploy to Vercel
 
-**IMPORTANTE**: Prima di fare il deploy su Vercel, devi cambiare il database provider:
+**IMPORTANT**: Before deploying to Vercel, you must change the database provider:
 
-1. **Modifica `prisma/schema.prisma`**:
+1. **Modify `prisma/schema.prisma`**:
    ```prisma
    datasource db {
-     provider = "postgresql"  // Cambia da "sqlite" a "postgresql"
+     provider = "postgresql"  // Change from "sqlite" to "postgresql"
      url      = env("DATABASE_URL")
    }
    ```
 
-2. **Rigenera Prisma Client**:
+2. **Regenerate Prisma Client**:
    ```bash
    npx prisma generate
    ```
 
-3. **Configura DATABASE_URL su Vercel**:
-   - Vai su Vercel Dashboard → Settings → Environment Variables
-   - Aggiungi: `DATABASE_URL=postgres://...` (URL del tuo database PostgreSQL)
+3. **Configure DATABASE_URL on Vercel**:
+   - Go to Vercel Dashboard → Settings → Environment Variables
+   - Add: `DATABASE_URL=postgres://...` (URL of your PostgreSQL database)
 
 4. **Deploy**:
    ```bash
    git add .
    git commit -m "Ready for production with PostgreSQL"
    git push
-   # oppure
+   # or
    vercel --prod
    ```
 
-## Comandi Utili
+## Useful Commands
 
 ```bash
-# Per sviluppo locale (SQLite)
+# For local development (SQLite)
 npm run dev
 
-# Per testare build locale
+# To test local build
 npm run build
 
-# Per switchare tra SQLite e PostgreSQL
-# Modifica prisma/schema.prisma → provider
-# Poi esegui:
+# To switch between SQLite and PostgreSQL
+# Modify prisma/schema.prisma → provider
+# Then run:
 npx prisma generate
 npx prisma db push
 ```
 
-## File Importanti
-- `prisma/schema.prisma` - Configurazione database
-- `.env` - Variabili d'ambiente locali (non committare!)
-- `env.example` - Template per variabili d'ambiente
-
+## Important Files
+- `prisma/schema.prisma` - Database configuration
+- `.env` - Local environment variables (don't commit!)
+- `env.example` - Template for environment variables

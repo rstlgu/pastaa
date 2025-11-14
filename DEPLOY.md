@@ -1,23 +1,23 @@
-# Guida al Deploy su Vercel
+# Deploy Guide for Vercel
 
-## Prerequisiti
+## Prerequisites
 
-- Account Vercel
-- Database PostgreSQL (consigliato: Vercel Postgres)
+- Vercel account
+- PostgreSQL database (recommended: Vercel Postgres)
 
-## Passaggi per il Deploy
+## Deploy Steps
 
-### 1. Crea il Database
+### 1. Create Database
 
-Su Vercel Dashboard:
-1. Vai al tuo progetto
-2. Seleziona "Storage" → "Create Database"
-3. Scegli "Postgres"
-4. Copia la `DATABASE_URL` generata
+On Vercel Dashboard:
+1. Go to your project
+2. Select "Storage" → "Create Database"
+3. Choose "Postgres"
+4. Copy the generated `DATABASE_URL`
 
-### 2. Configura le Variabili d'Ambiente
+### 2. Configure Environment Variables
 
-Nel tuo progetto Vercel, vai su Settings → Environment Variables e aggiungi:
+In your Vercel project, go to Settings → Environment Variables and add:
 
 ```
 DATABASE_URL=postgres://...
@@ -25,125 +25,124 @@ DATABASE_URL=postgres://...
 
 ### 3. Deploy
 
-#### Opzione A: Deploy da GitHub
+#### Option A: Deploy from GitHub
 
-1. Connetti il repository GitHub a Vercel
-2. Vercel farà automaticamente il deploy
+1. Connect GitHub repository to Vercel
+2. Vercel will automatically deploy
 
-#### Opzione B: Deploy da CLI
+#### Option B: Deploy from CLI
 
 ```bash
-# Installa Vercel CLI
+# Install Vercel CLI
 npm i -g vercel
 
 # Deploy
 vercel
 
-# Deploy in produzione
+# Deploy to production
 vercel --prod
 ```
 
-### 4. Inizializza il Database
+### 4. Initialize Database
 
-Dopo il primo deploy, esegui le migrations:
+After first deploy, run migrations:
 
 ```bash
-# Dalla tua macchina locale, con DATABASE_URL configurato
+# From your local machine, with DATABASE_URL configured
 npx prisma db push
 ```
 
-Oppure usa Vercel CLI:
+Or use Vercel CLI:
 
 ```bash
 vercel env pull .env.local
 npx prisma db push
 ```
 
-## Variabili d'Ambiente Necessarie
+## Required Environment Variables
 
-### `DATABASE_URL` (Obbligatorio)
+### `DATABASE_URL` (Required)
 
-URL di connessione al database PostgreSQL.
+PostgreSQL database connection URL.
 
-**Esempio per Vercel Postgres:**
+**Example for Vercel Postgres:**
 ```
 postgres://username:password@host:5432/database
 ```
 
-**Esempio per sviluppo locale con SQLite:**
+**Example for local development with SQLite:**
 ```
 file:./dev.db
 ```
-(Nota: per usare SQLite, modifica `prisma/schema.prisma` cambiando `provider = "postgresql"` in `provider = "sqlite"`)
+(Note: to use SQLite, modify `prisma/schema.prisma` changing `provider = "postgresql"` to `provider = "sqlite"`)
 
-## Sviluppo Locale
+## Local Development
 
-### Con PostgreSQL
+### With PostgreSQL
 
-1. Installa PostgreSQL localmente
-2. Crea un database: `createdb pasta`
-3. Copia `.env.example` in `.env`
-4. Modifica `DATABASE_URL` nel file `.env`
-5. Esegui le migrations: `npm run db:push`
-6. Avvia il server: `npm run dev`
+1. Install PostgreSQL locally
+2. Create a database: `createdb pasta`
+3. Copy `.env.example` to `.env`
+4. Modify `DATABASE_URL` in `.env` file
+5. Run migrations: `npm run db:push`
+6. Start server: `npm run dev`
 
-### Con SQLite (più semplice)
+### With SQLite (simpler)
 
-1. Modifica `prisma/schema.prisma`:
+1. Modify `prisma/schema.prisma`:
    ```prisma
    datasource db {
      provider = "sqlite"
      url      = "file:./dev.db"
    }
    ```
-2. Esegui: `npx prisma generate`
-3. Esegui: `npm run db:push`
-4. Avvia: `npm run dev`
+2. Run: `npx prisma generate`
+3. Run: `npm run db:push`
+4. Start: `npm run dev`
 
-## Note Importanti
+## Important Notes
 
-- ⚠️ **SQLite non è supportato su Vercel** (solo per sviluppo locale)
-- ✅ Per produzione usa sempre **PostgreSQL** o altro DB cloud
-- 🔒 Tutti i dati sono cifrati end-to-end lato client
-- 🔑 Le chiavi di cifratura non vengono mai inviate al server
-- 🗑️ I paste con "burn after reading" vengono eliminati automaticamente dopo la prima visualizzazione
+- ⚠️ **SQLite is not supported on Vercel** (only for local development)
+- ✅ For production always use **PostgreSQL** or other cloud DB
+- 🔒 All data is encrypted end-to-end client-side
+- 🔑 Encryption keys are never sent to the server
+- 🗑️ Pastes with "burn after reading" are automatically deleted after first view
 
-## Comandi Utili
+## Useful Commands
 
 ```bash
-# Sviluppo
+# Development
 npm run dev
 
-# Build locale
+# Local build
 npm run build
 
-# Prisma Studio (GUI per il database)
+# Prisma Studio (GUI for database)
 npm run db:studio
 
-# Push schema al database
+# Push schema to database
 npm run db:push
 
-# Genera Prisma Client
+# Generate Prisma Client
 npx prisma generate
 ```
 
 ## Troubleshooting
 
-### Errore: "Can't reach database server"
+### Error: "Can't reach database server"
 
-- Verifica che `DATABASE_URL` sia corretto
-- Controlla che il database sia accessibile
-- Su Vercel, assicurati che la variabile sia configurata
+- Verify that `DATABASE_URL` is correct
+- Check that database is accessible
+- On Vercel, make sure variable is configured
 
-### Errore di build su Vercel
+### Build error on Vercel
 
-- Verifica che `postinstall` script sia presente in `package.json`
-- Controlla i log di build per errori specifici
+- Verify that `postinstall` script is present in `package.json`
+- Check build logs for specific errors
 
-### Database non sincronizzato
+### Database not synchronized
 
 ```bash
-# Reset completo del database (⚠️ CANCELLA TUTTI I DATI)
+# Complete database reset (⚠️ DELETES ALL DATA)
 npx prisma db push --force-reset
 ```
-

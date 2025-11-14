@@ -1,132 +1,132 @@
-# 🔐 Pasta - Condivisione Testo Sicura
+# 🔐 Pasta - Secure Text Sharing
 
-Piattaforma web per condividere testo in modo sicuro con **crittografia end-to-end** e **zero registrazione**.
+Web platform to securely share text with **end-to-end encryption** and **zero registration**.
 
 ## ✨ Features
 
-- 🔒 **Crittografia End-to-End**: AES-GCM 256-bit
-- 🚫 **Zero Registrazione**: Nessun dato utente salvato
-- ⚡ **Veloce**: Cifratura client-side con Web Crypto API
-- 🔥 **Burn After Reading**: Eliminazione automatica dopo la prima lettura
-- ⏰ **Scadenza Personalizzabile**: 1h, 4h, 1d, 7d
-- 🔑 **Password Opzionale**: Secondo livello di protezione
-- 🎨 **UI Moderna**: Tema scuro/chiaro, animazioni con Framer Motion
-- 📱 **Responsive**: Design mobile-first con share nativo
+- 🔒 **End-to-End Encryption**: AES-GCM 256-bit
+- 🚫 **Zero Registration**: No user data saved
+- ⚡ **Fast**: Client-side encryption with Web Crypto API
+- 🔥 **Burn After Reading**: Automatic deletion after first read
+- ⏰ **Customizable Expiry**: 1h, 4h, 1d, 7d
+- 🔑 **Optional Password**: Second level of protection
+- 🎨 **Modern UI**: Dark/light theme, animations with Framer Motion
+- 📱 **Responsive**: Mobile-first design with native share
 
-## 🛠️ Stack Tecnologico
+## 🛠️ Technology Stack
 
 - **Framework**: Next.js 14 (App Router)
 - **UI**: React, Tailwind CSS, Shadcn UI
-- **Animazioni**: Framer Motion
-- **Crittografia**: Web Crypto API
-- **Database**: PostgreSQL + Prisma (SQLite per dev locale)
+- **Animations**: Framer Motion
+- **Encryption**: Web Crypto API
+- **Database**: PostgreSQL + Prisma (SQLite for local dev)
 - **TypeScript**: Type-safe
 - **Deploy**: Vercel-ready
 
 ## 🚀 Quick Start
 
-### Installazione
+### Installation
 
 ```bash
-# Installa dipendenze
+# Install dependencies
 npm install
 
 # Setup database
 npm run db:push
 
-# Avvia in sviluppo
+# Start development
 npm run dev
 ```
 
-Apri [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000)
 
-### Build per Produzione
+### Production Build
 
 ```bash
 npm run build
 npm start
 ```
 
-## 🌐 Deploy su Vercel
+## 🌐 Deploy to Vercel
 
-### Prerequisiti
-- Account [Vercel](https://vercel.com)
-- Database PostgreSQL (consigliato: Vercel Postgres)
+### Prerequisites
+- [Vercel](https://vercel.com) account
+- PostgreSQL database (recommended: Vercel Postgres)
 
-### Setup Rapido
+### Quick Setup
 
-1. **Crea Database PostgreSQL**
-   - Dashboard Vercel → Storage → Create Database → Postgres
-   - Copia il `DATABASE_URL`
+1. **Create PostgreSQL Database**
+   - Vercel Dashboard → Storage → Create Database → Postgres
+   - Copy the `DATABASE_URL`
 
 2. **Deploy**
    ```bash
-   # Installa Vercel CLI
+   # Install Vercel CLI
    npm i -g vercel
    
    # Deploy
    vercel
    ```
 
-3. **Configura Environment Variables**
+3. **Configure Environment Variables**
    - Settings → Environment Variables
-   - Aggiungi: `DATABASE_URL=postgres://...`
+   - Add: `DATABASE_URL=postgres://...`
 
-4. **Inizializza Database**
+4. **Initialize Database**
    ```bash
-   # Dalla tua macchina
+   # From your machine
    vercel env pull .env.local
    npx prisma db push
    ```
 
-📖 **Guida Completa**: Vedi [DEPLOY.md](./DEPLOY.md)
+📖 **Complete Guide**: See [DEPLOY.md](./DEPLOY.md)
 
-## 🔐 Architettura di Sicurezza
+## 🔐 Security Architecture
 
-### Flusso di Cifratura
+### Encryption Flow
 
-1. **Creazione**: 
-   - Utente scrive testo
-   - Generazione chiave AES-256 nel browser
-   - Cifratura con AES-GCM
-   - Invio solo contenuto cifrato al server
+1. **Creation**: 
+   - User writes text
+   - AES-256 key generation in browser
+   - Encryption with AES-GCM
+   - Send only encrypted content to server
 
-2. **Condivisione**:
-   - URL: `https://sito.com/view/{id}#chiave_base64`
-   - Il fragment `#chiave` NON viene mai inviato al server
-   - Rimane solo nel browser
+2. **Sharing**:
+   - URL: `https://site.com/view/{id}#base64_key`
+   - The fragment `#key` is NEVER sent to the server
+   - Stays only in the browser
 
-3. **Lettura**:
-   - Scarica contenuto cifrato
-   - Estrae chiave dal fragment
-   - Decifra localmente nel browser
+3. **Reading**:
+   - Download encrypted content
+   - Extract key from fragment
+   - Decrypt locally in browser
 
-### Sicurezza
+### Security
 
-- ✅ Chiave mai trasmessa al server
-- ✅ Server vede solo dati cifrati
-- ✅ Cifratura: AES-GCM 256-bit
-- ✅ IV casuali per ogni paste
-- ✅ Nessun tracking, nessun cookie
-- ✅ Eliminazione automatica scadenze
+- ✅ Key never transmitted to server
+- ✅ Server only sees encrypted data
+- ✅ Encryption: AES-GCM 256-bit
+- ✅ Random IVs for each paste
+- ✅ No tracking, no cookies
+- ✅ Automatic expiry deletion
 
-## 📁 Struttura Progetto
+## 📁 Project Structure
 
 ```
 pasta/
 ├── app/
 │   ├── api/paste/          # API Routes
-│   ├── view/[id]/          # Pagina visualizzazione
-│   ├── layout.tsx          # Layout root
+│   ├── view/[id]/          # View page
+│   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Homepage
-│   └── globals.css         # Stili globali
-├── components/ui/          # Componenti UI
+│   └── globals.css         # Global styles
+├── components/ui/          # UI Components
 ├── lib/
-│   ├── crypto.ts           # Libreria crittografia
+│   ├── crypto.ts           # Cryptography library
 │   ├── db.ts               # Prisma client
-│   └── utils.ts            # Utility
+│   └── utils.ts            # Utilities
 ├── prisma/
-│   └── schema.prisma       # Schema database
+│   └── schema.prisma       # Database schema
 └── package.json
 ```
 
@@ -134,7 +134,7 @@ pasta/
 
 ### POST `/api/paste`
 
-Crea nuovo paste cifrato.
+Create new encrypted paste.
 
 **Body**:
 ```json
@@ -156,7 +156,7 @@ Crea nuovo paste cifrato.
 
 ### GET `/api/paste/{id}`
 
-Recupera paste cifrato.
+Retrieve encrypted paste.
 
 **Response**:
 ```json
@@ -168,11 +168,11 @@ Recupera paste cifrato.
 }
 ```
 
-## 🔧 Configurazione
+## 🔧 Configuration
 
-### Variabili d'Ambiente
+### Environment Variables
 
-Crea `.env` file:
+Create `.env` file:
 
 ```env
 DATABASE_URL="file:./dev.db"
@@ -180,7 +180,7 @@ DATABASE_URL="file:./dev.db"
 
 ### Database
 
-Il progetto usa SQLite per semplicità. Per produzione, considera PostgreSQL:
+The project uses SQLite for simplicity. For production, consider PostgreSQL:
 
 ```prisma
 datasource db {
@@ -194,7 +194,7 @@ datasource db {
 ### Vercel
 
 ```bash
-# Installa Vercel CLI
+# Install Vercel CLI
 npm i -g vercel
 
 # Deploy
@@ -217,22 +217,22 @@ CMD ["npm", "start"]
 
 ## 🔒 Best Practices
 
-1. **URL Fragment**: La chiave nell'URL fragment (#) NON viene mai inviata al server
-2. **HTTPS Obbligatorio**: Sempre usare HTTPS in produzione
-3. **Limiti**: Max 100KB di testo per paste
-4. **Cleanup**: Job automatico per eliminare paste scaduti
+1. **URL Fragment**: The key in URL fragment (#) is NEVER sent to the server
+2. **HTTPS Required**: Always use HTTPS in production
+3. **Limits**: Max 100KB of text per paste
+4. **Cleanup**: Automatic job to delete expired pastes
 
-## 📄 Licenza
+## 📄 License
 
-MIT License - Usa liberamente!
+MIT License - Use freely!
 
-## 🤝 Contribuire
+## 🤝 Contributing
 
-Pull requests benvenute! Per modifiche importanti, apri prima una issue.
+Pull requests welcome! For major changes, please open an issue first.
 
 ## 🙏 Credits
 
-Creato con ❤️ usando:
+Created with ❤️ using:
 - [Next.js](https://nextjs.org/)
 - [Shadcn UI](https://ui.shadcn.com/)
 - [Framer Motion](https://www.framer.com/motion/)
@@ -240,5 +240,4 @@ Creato con ❤️ usando:
 
 ---
 
-**⚠️ Disclaimer**: Questo è un progetto educativo. Per uso in produzione, considera audit di sicurezza professionali.
-
+**⚠️ Disclaimer**: This is an educational project. For production use, consider professional security audits.

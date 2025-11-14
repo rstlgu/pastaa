@@ -1,66 +1,66 @@
-# 🚀 Riepilogo Deploy Ready
+# 🚀 Deploy Ready Summary
 
-## ✅ Modifiche Completate
+## ✅ Completed Changes
 
-### Configurazione Database
-- ✅ Schema Prisma aggiornato da SQLite a PostgreSQL
-- ✅ Script `postinstall` aggiunto per generare Prisma Client
-- ✅ Template variabili d'ambiente creato (`env.example`)
+### Database Configuration
+- ✅ Prisma schema updated from SQLite to PostgreSQL
+- ✅ `postinstall` script added to generate Prisma Client
+- ✅ Environment variables template created (`env.example`)
 
-### Codice Pulito
-- ✅ **0 errori ESLint**
-- ✅ **0 errori TypeScript**
-- ✅ Tutti gli import corretti
-- ✅ Tipi TypeScript corretti (no `any`)
-- ✅ Componenti UI ottimizzati
+### Clean Code
+- ✅ **0 ESLint errors**
+- ✅ **0 TypeScript errors**
+- ✅ All imports correct
+- ✅ TypeScript types correct (no `any`)
+- ✅ UI components optimized
 
-### File Deploy
-- ✅ `vercel.json` - Configurazione ottimizzata
-- ✅ `.eslintrc.json` - Linting configurato
-- ✅ `DEPLOY.md` - Guida dettagliata deploy
-- ✅ `VERCEL_CHECKLIST.md` - Checklist operativa
-- ✅ `README.md` - Documentazione aggiornata
+### Deploy Files
+- ✅ `vercel.json` - Optimized configuration
+- ✅ `.eslintrc.json` - Linting configured
+- ✅ `DEPLOY.md` - Detailed deploy guide
+- ✅ `VERCEL_CHECKLIST.md` - Operational checklist
+- ✅ `README.md` - Updated documentation
 
-## 📋 Prossimi Passi per il Deploy
+## 📋 Next Steps for Deploy
 
-### 1. Crea Database PostgreSQL
+### 1. Create PostgreSQL Database
 
-**Opzione A: Vercel Postgres (Consigliato)**
+**Option A: Vercel Postgres (Recommended)**
 ```
-1. Vai su vercel.com
+1. Go to vercel.com
 2. Dashboard → Storage → Create Database
-3. Seleziona "Postgres"
-4. Copia il DATABASE_URL
+3. Select "Postgres"
+4. Copy the DATABASE_URL
 ```
 
-**Opzione B: Altri Provider**
+**Option B: Other Providers**
 - Supabase: https://supabase.com
 - Railway: https://railway.app
 - Neon: https://neon.tech
 
-### 2. Deploy su Vercel
+### 2. Deploy to Vercel
 
-**Metodo Git (Raccomandato):**
+**Git Method (Recommended):**
 ```bash
-# 1. Inizializza repo Git (se non fatto)
+# 1. Initialize Git repo (if not done)
 git init
 git add .
 git commit -m "Initial commit"
 
-# 2. Push su GitHub
-git remote add origin https://github.com/tuo-user/pasta.git
+# 2. Push to GitHub
+git remote add origin https://github.com/your-user/pasta.git
 git push -u origin main
 
-# 3. Su vercel.com:
+# 3. On vercel.com:
 - New Project
-- Import da GitHub
-- Configura DATABASE_URL
+- Import from GitHub
+- Configure DATABASE_URL
 - Deploy!
 ```
 
-**Metodo CLI:**
+**CLI Method:**
 ```bash
-# Installa Vercel CLI
+# Install Vercel CLI
 npm i -g vercel
 
 # Login
@@ -69,44 +69,44 @@ vercel login
 # Deploy
 vercel
 
-# Configura env variable
+# Configure env variable
 vercel env add DATABASE_URL
 
-# Deploy in produzione
+# Deploy to production
 vercel --prod
 ```
 
-### 3. Inizializza Database
+### 3. Initialize Database
 
-Dopo il primo deploy:
+After first deploy:
 
 ```bash
 # Pull env variables
 vercel env pull .env.local
 
-# Esegui migrations
+# Run migrations
 npx prisma db push
 ```
 
-### 4. Verifica
+### 4. Verify
 
-Visita: `https://tuo-progetto.vercel.app`
+Visit: `https://your-project.vercel.app`
 
 Test:
-- ✅ Crea un paste
-- ✅ Visualizza paste
+- ✅ Create a paste
+- ✅ View paste
 - ✅ Burn after reading
 - ✅ Password protection
 - ✅ Theme toggle
 - ✅ Responsive mobile
 
-## 🔧 Comandi Utili
+## 🔧 Useful Commands
 
 ```bash
-# Sviluppo locale
+# Local development
 npm run dev
 
-# Build locale (test)
+# Local build (test)
 npm run build
 
 # Lint
@@ -119,58 +119,57 @@ npm run db:studio
 npm run db:push
 ```
 
-## 📚 Documentazione
+## 📚 Documentation
 
-- **Deploy Completo**: `DEPLOY.md`
+- **Complete Deploy**: `DEPLOY.md`
 - **Checklist**: `VERCEL_CHECKLIST.md`
 - **README**: `README.md`
 - **Env Template**: `env.example`
 
-## 🎯 Features Implementate
+## 🎯 Implemented Features
 
-- ✅ Crittografia E2E (AES-256-GCM)
-- ✅ Burn After Reading con countdown
+- ✅ E2E Encryption (AES-256-GCM)
+- ✅ Burn After Reading with countdown
 - ✅ Password protection
-- ✅ Scadenza configurabile (1h, 4h, 1d, 7d)
-- ✅ Tema dark/light
+- ✅ Configurable expiry (1h, 4h, 1d, 7d)
+- ✅ Dark/light theme
 - ✅ Responsive design
-- ✅ Animazioni Framer Motion
-- ✅ Logo spaghetto personalizzato
-- ✅ Share nativo mobile
-- ✅ Badge E2E informativo
+- ✅ Framer Motion animations
+- ✅ Custom spaghetti logo
+- ✅ Native mobile share
+- ✅ Informative E2E badge
 
-## ⚠️ Note Importanti
+## ⚠️ Important Notes
 
-1. **DATABASE_URL** è l'unica variabile d'ambiente richiesta
-2. **SQLite NON funziona** su Vercel (solo per dev locale)
-3. Le **chiavi di cifratura** non vengono MAI inviate al server
-4. Il **fragment URL (#chiave)** rimane solo client-side
-5. **Nessun dato** utente viene salvato (privacy totale)
+1. **DATABASE_URL** is the only required environment variable
+2. **SQLite DOES NOT work** on Vercel (only for local dev)
+3. **Encryption keys** are NEVER sent to the server
+4. The **URL fragment (#key)** remains client-side only
+5. **No user data** is saved (total privacy)
 
-## 🆘 Problemi Comuni
+## 🆘 Common Issues
 
-### Build fallisce
+### Build fails
 ```bash
-# Test locale
+# Local test
 npm run build
 
-# Verifica logs
+# Check logs
 vercel logs
 ```
 
 ### Database error
-- Controlla che `DATABASE_URL` sia configurato
-- Verifica che il database sia attivo
-- Esegui `npx prisma db push`
+- Check that `DATABASE_URL` is configured
+- Verify the database is active
+- Run `npx prisma db push`
 
 ### 500 Error
 ```bash
-# Controlla logs in tempo reale
+# Check logs in real-time
 vercel logs --follow
 ```
 
-## 🎉 Il Progetto è Pronto!
+## 🎉 The Project is Ready!
 
-Tutti i file sono configurati correttamente per il deploy su Vercel.
-Segui i passaggi sopra e il tuo sito sarà online in pochi minuti!
-
+All files are correctly configured for deploy on Vercel.
+Follow the steps above and your site will be online in a few minutes!
