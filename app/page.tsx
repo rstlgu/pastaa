@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Lock, Copy, Check, Clock, Flame, Share2 } from "lucide-react";
+import { Lock, Copy, Check, Clock, Flame, Share2, Github } from "lucide-react";
 import { generateKey, exportKey, encryptText } from "@/lib/crypto";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { E2EBadge } from "@/components/e2e-badge";
@@ -150,6 +150,22 @@ export default function HomePage() {
           
           <div className="flex items-center gap-3">
             <E2EBadge />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.a
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  href="https://github.com/rstlgu/pasta.git"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors"
+                  aria-label={t('viewSourceGitHub')}
+                >
+                  <Github className="h-5 w-5" />
+                </motion.a>
+              </TooltipTrigger>
+              <TooltipContent className="hidden md:block">{t('viewSourceGitHub')}</TooltipContent>
+            </Tooltip>
             <ThemeToggle />
           </div>
         </motion.div>

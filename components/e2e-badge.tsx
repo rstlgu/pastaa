@@ -4,8 +4,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Shield, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/language-provider";
 
 export function E2EBadge() {
+  const { t } = useLanguage();
   const [showE2EInfo, setShowE2EInfo] = useState(false);
   const [showDesktopCard, setShowDesktopCard] = useState(false);
 
@@ -41,8 +43,8 @@ export function E2EBadge() {
                   <Lock className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-green-500">Crittografia E2E</h3>
-                  <p className="text-xs text-muted-foreground">End-to-End Encryption</p>
+                  <h3 className="text-lg font-bold text-green-500">{t('e2eEncryption')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('e2eFullName')}</p>
                 </div>
               </div>
 
@@ -51,24 +53,23 @@ export function E2EBadge() {
                 <div>
                   <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                     <Shield className="h-4 w-4 text-green-500" />
-                    Come Funziona
+                    {t('howItWorks')}
                   </h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Il tuo testo viene cifrato nel browser prima di essere inviato al server.
-                    Nessuno può leggere il contenuto.
+                    {t('e2eDescription')}
                   </p>
                 </div>
 
                 <div className="bg-muted rounded-lg p-3 border">
-                  <h5 className="font-semibold text-xs mb-2">Passaggi di Sicurezza:</h5>
+                  <h5 className="font-semibold text-xs mb-2">{t('howItWorks')}:</h5>
                   <div className="space-y-2">
                     <div className="flex gap-2">
                       <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
                         1
                       </div>
                       <div>
-                        <p className="text-xs font-medium">Cifratura nel Browser</p>
-                        <p className="text-[10px] text-muted-foreground">AES-256-GCM</p>
+                        <p className="text-xs font-medium">{t('clientEncryption')}</p>
+                        <p className="text-[10px] text-muted-foreground">{t('clientEncryptionDesc')}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -76,8 +77,8 @@ export function E2EBadge() {
                         2
                       </div>
                       <div>
-                        <p className="text-xs font-medium">Chiave nell&apos;URL</p>
-                        <p className="text-[10px] text-muted-foreground">Mai inviata al server</p>
+                        <p className="text-xs font-medium">{t('keyInUrl')}</p>
+                        <p className="text-[10px] text-muted-foreground">{t('keyInUrlDesc')}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -85,8 +86,8 @@ export function E2EBadge() {
                         3
                       </div>
                       <div>
-                        <p className="text-xs font-medium">Decifratura Locale</p>
-                        <p className="text-[10px] text-muted-foreground">Solo nel tuo browser</p>
+                        <p className="text-xs font-medium">{t('localDecryption')}</p>
+                        <p className="text-[10px] text-muted-foreground">{t('localDecryptionDesc')}</p>
                       </div>
                     </div>
                   </div>
@@ -96,9 +97,9 @@ export function E2EBadge() {
                   <div className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-semibold text-green-500 mb-1">Zero Knowledge</p>
+                      <p className="text-xs font-semibold text-green-500 mb-1">{t('zeroKnowledge')}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        Il server salva solo dati cifrati.
+                        {t('zeroKnowledgeDesc')}
                       </p>
                     </div>
                   </div>
@@ -140,8 +141,8 @@ export function E2EBadge() {
                     <Lock className="h-7 w-7 text-green-500" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-green-500">Crittografia E2E</h2>
-                    <p className="text-xs text-muted-foreground">End-to-End Encryption</p>
+                    <h2 className="text-xl font-bold text-green-500">{t('e2eEncryption')}</h2>
+                    <p className="text-xs text-muted-foreground">{t('e2eFullName')}</p>
                   </div>
                 </div>
 
@@ -150,24 +151,23 @@ export function E2EBadge() {
                   <div>
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
                       <Shield className="h-4 w-4 text-green-500" />
-                      Come Funziona
+                      {t('howItWorks')}
                     </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Il tuo testo viene cifrato direttamente nel tuo browser prima di essere inviato al server.
-                      Questo significa che nessuno, nemmeno noi, può leggere il contenuto.
+                      {t('e2eDescription')}
                     </p>
                   </div>
 
                   <div className="bg-muted rounded-lg p-4 border-2">
-                    <h4 className="font-semibold text-sm mb-3">Passaggi di Sicurezza:</h4>
+                    <h4 className="font-semibold text-sm mb-3">{t('howItWorks')}:</h4>
                     <div className="space-y-3">
                       <div className="flex gap-3">
                         <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
                           1
                         </div>
                         <div>
-                          <p className="text-sm font-medium">Cifratura nel Browser</p>
-                          <p className="text-xs text-muted-foreground">Usa AES-256-GCM, lo standard militare</p>
+                          <p className="text-sm font-medium">{t('clientEncryption')}</p>
+                          <p className="text-xs text-muted-foreground">{t('clientEncryptionDesc')}</p>
                         </div>
                       </div>
                       <div className="flex gap-3">
@@ -175,8 +175,8 @@ export function E2EBadge() {
                           2
                         </div>
                         <div>
-                          <p className="text-sm font-medium">Chiave nell&apos;URL</p>
-                          <p className="text-xs text-muted-foreground">La chiave resta nel fragment (#), mai inviata al server</p>
+                          <p className="text-sm font-medium">{t('keyInUrl')}</p>
+                          <p className="text-xs text-muted-foreground">{t('keyInUrlDescLong')}</p>
                         </div>
                       </div>
                       <div className="flex gap-3">
@@ -184,8 +184,8 @@ export function E2EBadge() {
                           3
                         </div>
                         <div>
-                          <p className="text-sm font-medium">Decifratura Locale</p>
-                          <p className="text-xs text-muted-foreground">Solo chi ha il link può decifrare nel proprio browser</p>
+                          <p className="text-sm font-medium">{t('localDecryption')}</p>
+                          <p className="text-xs text-muted-foreground">{t('localDecryptionDescLong')}</p>
                         </div>
                       </div>
                     </div>
@@ -195,9 +195,9 @@ export function E2EBadge() {
                     <div className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-semibold text-green-500 mb-1">Zero Knowledge</p>
+                        <p className="text-sm font-semibold text-green-500 mb-1">{t('zeroKnowledge')}</p>
                         <p className="text-xs text-muted-foreground">
-                          Il server salva solo dati cifrati. Nemmeno gli amministratori possono leggere il tuo testo.
+                          {t('zeroKnowledgeDescLong')}
                         </p>
                       </div>
                     </div>
@@ -208,7 +208,7 @@ export function E2EBadge() {
                     className="w-full"
                     size="lg"
                   >
-                    Ok
+                    {t('ok')}
                   </Button>
                 </div>
               </div>

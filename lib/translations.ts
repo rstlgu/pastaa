@@ -87,6 +87,9 @@ export const translations = {
     // Errors
     errorCreating: 'Errore durante la creazione del paste',
     missingEncryptionData: 'Dati di cifratura mancanti',
+    
+    // GitHub
+    viewSourceGitHub: 'Visualizza codice sorgente su GitHub',
   },
   en: {
     // Common
@@ -174,6 +177,9 @@ export const translations = {
     // Errors
     errorCreating: 'Error creating paste',
     missingEncryptionData: 'Encryption data missing',
+    
+    // GitHub
+    viewSourceGitHub: 'View source code on GitHub',
   }
 };
 
