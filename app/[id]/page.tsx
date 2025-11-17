@@ -596,7 +596,7 @@ export default function PublicPageEditor() {
                       <Avatar key={user.id}>
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>
-                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          {user.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     ))}
@@ -618,7 +618,7 @@ export default function PublicPageEditor() {
                             <Avatar>
                               <AvatarImage src={user.avatar} alt={user.name} />
                               <AvatarFallback>
-                                {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                {user.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                           </TooltipTrigger>
@@ -857,7 +857,7 @@ export default function PublicPageEditor() {
               transition={{ duration: 0.2 }}
               className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"
             >
-              <p className="text-xs text-muted-foreground/60">
+              <p className="text-sm font-medium" style={{ color: '#eab308' }}>
                 {t('saved')}
               </p>
             </motion.div>
@@ -941,7 +941,7 @@ export default function PublicPageEditor() {
                         <Avatar>
                           <AvatarImage src={user.avatar} alt={user.name} />
                           <AvatarFallback>
-                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            {user.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">

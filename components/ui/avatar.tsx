@@ -57,7 +57,7 @@ AvatarImage.displayName = "AvatarImage";
 const AvatarFallback = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+>(({ className, style, ...props }, ref) => {
   return (
     <div
       ref={ref}
@@ -65,6 +65,7 @@ const AvatarFallback = React.forwardRef<
         "flex h-full w-full items-center justify-center bg-primary/20 text-primary font-medium text-sm",
         className
       )}
+      style={style}
       {...props}
     />
   );
