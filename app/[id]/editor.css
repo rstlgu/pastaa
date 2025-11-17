@@ -98,3 +98,30 @@
   margin: 2em 0;
 }
 
+/* Evidenziazione modifiche remote */
+.remote-update {
+  animation: remoteUpdateHighlight 1s ease-in-out;
+}
+
+@keyframes remoteUpdateHighlight {
+  0% {
+    background-color: rgba(234, 179, 8, 0.3);
+  }
+  50% {
+    background-color: rgba(234, 179, 8, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Evidenziazione per CodeMirror */
+.cm-editor.remote-update {
+  animation: remoteUpdateHighlight 1s ease-in-out;
+}
+
+/* Evidenziazione per TipTap */
+.ProseMirror.remote-update {
+  animation: remoteUpdateHighlight 1s ease-in-out;
+}
+

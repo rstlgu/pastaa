@@ -27,6 +27,9 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { EditorToolbar } from '@/components/editor-toolbar';
 import { useTheme } from '@/components/theme-provider';
 import { useRealtimeSync } from '@/lib/use-realtime-sync';
+import { usePresence } from '@/lib/use-presence';
+import { Avatar, AvatarGroup } from '@/components/ui/avatar';
+import { RemoteCursors } from '@/components/remote-cursors';
 import './editor.css';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
@@ -373,6 +376,15 @@ export default function PublicPageEditor() {
         // Aggiorna solo se il contenuto è diverso
         const currentContent = JSON.stringify({ docs: contentDocs, code: contentCode });
         if (content !== currentContent) {
+          // Evidenzia le modifiche remote aggiungendo una classe temporanea
+          const editorElement = document.querySelector('.ProseMirror, .cm-editor');
+          if (editorElement) {
+            editorElement.classList.add('remote-update');
+            setTimeout(() => {
+              editorElement.classList.remove('remote-update');
+            }, 1000);
+          }
+          
           setContentDocs(parsed.docs || '<p></p>');
           setContentCode(parsed.code || '');
           lastSavedContentRef.current = content;
@@ -392,6 +404,12 @@ export default function PublicPageEditor() {
   useRealtimeSync({
     pageId,
     onUpdate: handleRemoteUpdate,
+    enabled: !isLoading && pageExists,
+  });
+
+  // Sistema di presenza utenti
+  const { users, sendCursor } = usePresence({
+    pageId,
     enabled: !isLoading && pageExists,
   });
 
@@ -510,7 +528,7 @@ export default function PublicPageEditor() {
         <motion.nav
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border-b-2 border-primary bg-card/50 backdrop-blur-sm sticky top-0 z-50"
+          className="border-b-2 border-primary bg-card/50 backdrop-blur-sm sticky top-0 z-50 relative"
         >
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
             {/* Left - Logo + Page ID */}
@@ -564,11 +582,46 @@ export default function PublicPageEditor() {
                 )}
               </div>
 
-              <div className="hidden md:flex items-center gap-2">
-                <GitHubBadge />
-              </div>
+              {/* Avatar altri utenti - Mobile: sotto la navbar, Desktop: nella navbar */}
+              {users.length > 0 && (
+                <div className="md:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-b border-primary/20 px-4 py-2 flex items-center gap-2">
+                  <AvatarGroup>
+                    {users.map((user) => (
+                      <Avatar
+                        key={user.id}
+                        src={user.avatar}
+                        alt={user.name}
+                        fallback={user.name.charAt(0)}
+                        className="border-2 border-primary/30"
+                      />
+                    ))}
+                  </AvatarGroup>
+                  <span className="text-xs text-muted-foreground">
+                    {users.length} {users.length === 1 ? 'utente' : 'utenti'} online
+                  </span>
+                </div>
+              )}
 
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                {/* Avatar altri utenti - Desktop */}
+                {users.length > 0 && (
+                  <div className="hidden md:flex items-center gap-2">
+                    <AvatarGroup className="mr-2">
+                      {users.map((user) => (
+                        <Avatar
+                          key={user.id}
+                          src={user.avatar}
+                          alt={user.name}
+                          fallback={user.name.charAt(0)}
+                          className="border-2 border-primary/30"
+                        />
+                      ))}
+                    </AvatarGroup>
+                  </div>
+                )}
+                <GitHubBadge />
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </motion.nav>
@@ -578,7 +631,7 @@ export default function PublicPageEditor() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="flex-1 flex flex-col md:container md:mx-auto md:px-4 md:py-6"
+          className={`flex-1 flex flex-col md:container md:mx-auto md:px-4 md:py-6 ${users.length > 0 ? 'pt-14 md:pt-6' : ''}`}
         >
           <div className="w-full flex-1 md:border-2 md:border-primary md:rounded-xl overflow-hidden bg-card flex flex-col min-h-0">
             <EditorToolbar 
@@ -589,7 +642,14 @@ export default function PublicPageEditor() {
               onCodeLanguageChange={setCodeLanguage}
             />
             
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div 
+              className="flex-1 min-h-0 overflow-hidden relative"
+              onMouseMove={(e) => {
+                if (sendCursor) {
+                  sendCursor(e.clientX, e.clientY);
+                }
+              }}
+            >
               {editorMode === 'docs' ? (
                 <div className="h-full overflow-auto">
                   <EditorContent 
@@ -796,6 +856,9 @@ export default function PublicPageEditor() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Cursori remoti */}
+        <RemoteCursors users={users} />
       </div>
     </TooltipProvider>
   );

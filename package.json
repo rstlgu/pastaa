@@ -23,6 +23,7 @@
     "@codemirror/lang-sql": "^6.10.0",
     "@codemirror/lang-xml": "^6.1.0",
     "@codemirror/language": "^6.11.3",
+    "@faker-js/faker": "^10.1.0",
     "@prisma/client": "^5.20.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.2",

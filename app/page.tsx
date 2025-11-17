@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Send, Share2, Github, Lock, Code, FileText } from "lucide-react";
+import { Send, Share2, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
@@ -125,7 +125,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground mt-4 md:mt-12"
+              className="flex flex-wrap justify-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground mt-4 md:mt-12"
             >
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-primary" />
@@ -138,6 +138,30 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
                 <span>Rich Text Editor</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span>Real-time Collaboration</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <span>Fast & Lightweight</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <span>Mobile Friendly</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span>Privacy First</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Server className="h-4 w-4 text-primary" />
+                <span>Self Hostable</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                <span>No Registration</span>
               </div>
               <div className="flex items-center gap-2">
                 <Github className="h-4 w-4 text-primary" />

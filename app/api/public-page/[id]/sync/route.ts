@@ -20,7 +20,7 @@ export async function GET(
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       };
       
-      // Polling ogni 1 secondo per cambiamenti
+      // Polling ogni 200ms per cambiamenti (più veloce)
       const interval = setInterval(async () => {
         try {
           const page = await prisma.publicPage.findUnique({
@@ -39,7 +39,7 @@ export async function GET(
           console.error('Errore polling:', error);
           send(JSON.stringify({ type: 'error', message: 'Errore sincronizzazione' }));
         }
-      }, 1000);
+      }, 200);
       
       // Cleanup quando il client si disconnette
       request.signal.addEventListener('abort', () => {
