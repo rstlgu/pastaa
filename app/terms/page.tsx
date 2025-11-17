@@ -46,7 +46,7 @@ export default function TermsPage() {
           {/* Introduction */}
           <section className="space-y-4">
             <p className="text-lg leading-relaxed">
-              Benvenuto su Pastaa. Utilizzando il nostro servizio, accetti di rispettare i seguenti termini e condizioni. Se non sei d'accordo con questi termini, ti preghiamo di non utilizzare il servizio.
+              Benvenuto su Pastaa. Utilizzando il nostro servizio, accetti di rispettare i seguenti termini e condizioni. Se non sei d&apos;accordo con questi termini, ti preghiamo di non utilizzare il servizio.
             </p>
           </section>
 
@@ -80,7 +80,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <div className="flex items-center gap-2">
               <Shield className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-bold">Responsabilità dell'Utente</h2>
+              <h2 className="text-2xl font-bold">Responsabilità dell&apos;Utente</h2>
             </div>
             
             <p className="text-muted-foreground mb-3">
@@ -123,12 +123,12 @@ export default function TermsPage() {
             </div>
             
             <p className="text-muted-foreground">
-              Il servizio è fornito "così com'è" e "come disponibile". Non garantiamo che il servizio sarà ininterrotto, privo di errori o sicuro al 100%. Ci riserviamo il diritto di:
+              Il servizio è fornito &quot;così com&apos;è&quot; e &quot;come disponibile&quot;. Non garantiamo che il servizio sarà ininterrotto, privo di errori o sicuro al 100%. Ci riserviamo il diritto di:
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
               <li>Modificare, sospendere o interrompere il servizio in qualsiasi momento senza preavviso</li>
               <li>Rimuovere contenuti che violano questi termini</li>
-              <li>Limitare o bloccare l'accesso a utenti che violano questi termini</li>
+              <li>Limitare o bloccare l&apos;accesso a utenti che violano questi termini</li>
             </ul>
           </section>
 
@@ -170,13 +170,13 @@ export default function TermsPage() {
               In nessun caso Pastaa, i suoi sviluppatori o affiliati saranno responsabili per:
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>Danni diretti, indiretti, incidentali o consequenziali derivanti dall'uso o dall'incapacità di utilizzare il servizio</li>
+              <li>Danni diretti, indiretti, incidentali o consequenziali derivanti dall&apos;uso o dall&apos;incapacità di utilizzare il servizio</li>
               <li>Perdita di dati, profitti o altre perdite commerciali</li>
               <li>Interruzioni del servizio o errori tecnici</li>
-              <li>Accesso non autorizzato ai contenuti dovuto a negligenza dell'utente</li>
+              <li>Accesso non autorizzato ai contenuti dovuto a negligenza dell&apos;utente</li>
             </ul>
             <p className="text-muted-foreground mt-3">
-              L'utilizzo del servizio è a tuo rischio. Non garantiamo che il servizio soddisferà i tuoi requisiti o sarà disponibile in modo ininterrotto.
+              L&apos;utilizzo del servizio è a tuo rischio. Non garantiamo che il servizio soddisferà i tuoi requisiti o sarà disponibile in modo ininterrotto.
             </p>
           </section>
 
@@ -200,7 +200,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold">Modifiche ai Termini</h2>
             <p className="text-muted-foreground">
-              Ci riserviamo il diritto di modificare questi Termini di Servizio in qualsiasi momento. Le modifiche entreranno in vigore immediatamente dopo la pubblicazione su questa pagina. È tua responsabilità rivedere periodicamente questi termini. Il continuo utilizzo del servizio dopo le modifiche costituisce l'accettazione dei nuovi termini.
+              Ci riserviamo il diritto di modificare questi Termini di Servizio in qualsiasi momento. Le modifiche entreranno in vigore immediatamente dopo la pubblicazione su questa pagina. È tua responsabilità rivedere periodicamente questi termini. Il continuo utilizzo del servizio dopo le modifiche costituisce l&apos;accettazione dei nuovi termini.
             </p>
           </section>
 

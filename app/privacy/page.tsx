@@ -172,7 +172,7 @@ export default function PrivacyPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold">Modifiche alla Privacy Policy</h2>
             <p className="text-muted-foreground">
-              Ci riserviamo il diritto di aggiornare questa Privacy Policy. Eventuali modifiche sostanziali saranno pubblicate su questa pagina con la data dell'ultimo aggiornamento. Ti consigliamo di consultare periodicamente questa pagina per essere informato su come proteggiamo le tue informazioni.
+              Ci riserviamo il diritto di aggiornare questa Privacy Policy. Eventuali modifiche sostanziali saranno pubblicate su questa pagina con la data dell&apos;ultimo aggiornamento. Ti consigliamo di consultare periodicamente questa pagina per essere informato su come proteggiamo le tue informazioni.
             </p>
           </section>
 
