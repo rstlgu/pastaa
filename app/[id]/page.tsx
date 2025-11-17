@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Copy, Share2, Save } from "lucide-react";
-import { toast } from "sonner";
+import { Check, Loader2, Copy, Share2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";
@@ -160,6 +159,7 @@ export default function PublicPageEditor() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [pageExists, setPageExists] = useState(false);
   const [editorMode, setEditorMode] = useState<'code' | 'docs'>('code');
@@ -286,27 +286,25 @@ export default function PublicPageEditor() {
         lastSavedContentRef.current = contentToSave;
         setLastSaved(new Date(data.updatedAt));
         setSaved(true);
+        setSaveError(false);
         setPageExists(true);
+        // Mostra il testo "Salvato" per 2 secondi
         setTimeout(() => setSaved(false), 2000);
-        
-        // Mostra notifica di salvataggio automatico
-        toast.success('Salvato automaticamente', {
-          icon: <Save className="h-4 w-4" />,
-          duration: 3000,
-        });
       } else {
         // Se la risposta non è ok, mostra errore
         const errorData = await response.json().catch(() => ({}));
         console.error('Errore salvataggio:', errorData);
-        toast.error('Errore durante il salvataggio', {
-          duration: 3000,
-        });
+        setSaveError(true);
+        setSaved(false);
+        // Mostra il testo "Error" per 2 secondi
+        setTimeout(() => setSaveError(false), 2000);
       }
     } catch (error) {
       console.error('Errore salvataggio:', error);
-      toast.error('Errore durante il salvataggio', {
-        duration: 3000,
-      });
+      setSaveError(true);
+      setSaved(false);
+      // Mostra il testo "Error" per 2 secondi
+      setTimeout(() => setSaveError(false), 2000);
     } finally {
       setIsSaving(false);
     }
@@ -766,6 +764,36 @@ export default function PublicPageEditor() {
                 </div>
               </motion.div>
             </>
+          )}
+        </AnimatePresence>
+
+        {/* Notifica "Salvato" / "Error" - bottom center */}
+        <AnimatePresence>
+          {saved && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"
+            >
+              <p className="text-xs text-muted-foreground/60">
+                {t('saved')}
+              </p>
+            </motion.div>
+          )}
+          {saveError && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"
+            >
+              <p className="text-xs text-muted-foreground/60">
+                {t('error')}
+              </p>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

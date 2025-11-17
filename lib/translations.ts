@@ -9,6 +9,7 @@ export const translations = {
     cancel: 'Annulla',
     copy: 'Copia',
     copied: 'Copiato!',
+    saved: 'Salvato',
     
     // Homepage
     appName: 'Pastaa',
@@ -135,6 +136,7 @@ export const translations = {
     cancel: 'Cancel',
     copy: 'Copy',
     copied: 'Copied!',
+    saved: 'Saved',
     
     // Homepage
     appName: 'Pastaa',

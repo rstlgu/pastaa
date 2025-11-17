@@ -165,13 +165,6 @@ export default function Home() {
             <Link href="/terms" className="hover:text-foreground/70 transition-colors">
               {t('termsOfService')}
             </Link>
-            <Link href="/about" className="hover:text-foreground/70 transition-colors">
-              {t('about')}
-            </Link>
-            <Link href="/contact" className="hover:text-foreground/70 transition-colors">
-              {t('contact')}
-            </Link>
-            <span>© 2025 Pastaa</span>
           </div>
         </div>
       </motion.footer>
