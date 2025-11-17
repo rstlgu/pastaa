@@ -115,11 +115,17 @@ export const translations = {
     
     // Homepage
     heroTitle: 'Condivisione Testo Sicura',
-    heroSubtitle: 'Un editor di codice online e un sistema di condivisione testo con crittografia end-to-end',
+    heroSubtitle: 'Condividi testo e codice in modo sicuro e invia messaggi cifrati con un editor open source',
     sendButton: 'Send',
     shareButton: 'Share',
     sendDescription: 'Crittografia end-to-end, nessun server può leggere il tuo contenuto',
     shareDescription: 'Editor collaborativo per codice e documenti in tempo reale',
+    
+    // Footer
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Termini di Servizio',
+    about: 'Chi Siamo',
+    contact: 'Contatti',
   },
   en: {
     // Common
@@ -132,7 +138,7 @@ export const translations = {
     
     // Homepage
     appName: 'Pastaa',
-    appTagline: 'Secure text sharing with end-to-end encryption',
+    appTagline: 'An open source editor for text/code sharing and message sending with end-to-end encryption',
     textPlaceholder: 'Enter text...',
     encryptAndShare: 'Share',
     encrypting: 'Encrypting...',
@@ -240,6 +246,12 @@ export const translations = {
     shareButton: 'Share',
     sendDescription: 'End-to-end encryption, no server can read your content',
     shareDescription: 'Collaborative editor for code and documents in real-time',
+    
+    // Footer
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
+    about: 'About',
+    contact: 'Contact',
   }
 };
 

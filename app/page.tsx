@@ -8,30 +8,17 @@ import { useLanguage } from "@/components/language-provider";
 import { GitHubBadge } from "@/components/github-badge";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import Link from "next/link";
-import { useState } from "react";
 
 export default function Home() {
   const { t } = useLanguage();
-  const [showGitHubBadge, setShowGitHubBadge] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Theme Toggle - Fixed top right */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-        <a
-          href="https://github.com/rstlgu/pastaa"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden md:inline-flex items-center justify-center rounded-full border-2 border-primary bg-card/80 backdrop-blur-sm hover:bg-muted h-10 w-10 transition-colors"
-        >
-          <Github className="h-5 w-5" />
-        </a>
-        <button
-          onClick={() => setShowGitHubBadge(true)}
-          className="md:hidden inline-flex items-center justify-center rounded-full border-2 border-primary bg-card/80 backdrop-blur-sm hover:bg-muted h-10 w-10 transition-colors"
-        >
-          <Github className="h-5 w-5" />
-        </button>
+        <div className="bg-card/80 backdrop-blur-sm rounded-full">
+          <GitHubBadge />
+        </div>
         <div className="bg-card/80 backdrop-blur-sm rounded-full">
           <ThemeToggle />
         </div>
@@ -138,7 +125,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground mt-8 md:mt-12"
+              className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground mt-4 md:mt-12"
             >
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-primary" />
@@ -167,26 +154,28 @@ export default function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="border-t-2 border-primary/30 py-6"
+        className="border-t border-primary/20 py-6"
       >
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span>© 2025 Pastaa</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>{t('encryption')}</span>
-              <span>•</span>
-              <button onClick={() => setShowGitHubBadge(true)} className="hover:text-primary transition-colors">
-                Open Source
-              </button>
-            </div>
+          {/* Links - Una riga su desktop, centrati */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+            <Link href="/privacy" className="hover:text-foreground/70 transition-colors">
+              {t('privacyPolicy')}
+            </Link>
+            <Link href="/terms" className="hover:text-foreground/70 transition-colors">
+              {t('termsOfService')}
+            </Link>
+            <Link href="/about" className="hover:text-foreground/70 transition-colors">
+              {t('about')}
+            </Link>
+            <Link href="/contact" className="hover:text-foreground/70 transition-colors">
+              {t('contact')}
+            </Link>
+            <span>© 2025 Pastaa</span>
           </div>
         </div>
       </motion.footer>
 
-      {/* GitHub Badge */}
-      <GitHubBadge show={showGitHubBadge} onClose={() => setShowGitHubBadge(false)} />
     </div>
   );
 }

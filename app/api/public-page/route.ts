@@ -13,12 +13,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'ID mancante' }, { status: 400 });
     }
 
-    const page = await prisma.publicPage.findUnique({
-      where: { id },
-    });
-
-    if (!page) {
-      // Ritorna una pagina vuota se non esiste
+    // Validazione ID: solo lettere, numeri, trattini e underscore
+    const validIdRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!validIdRegex.test(id) || id.length > 100) {
+      // Ritorna una pagina vuota per ID non validi invece di errore
       return NextResponse.json({ 
         id, 
         content: '', 
@@ -26,18 +24,45 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ 
-      id: page.id, 
-      content: page.content,
-      exists: true,
-      updatedAt: page.updatedAt
-    });
+    try {
+      const page = await prisma.publicPage.findUnique({
+        where: { id },
+      });
+
+      if (!page) {
+        // Ritorna una pagina vuota se non esiste
+        return NextResponse.json({ 
+          id, 
+          content: '', 
+          exists: false 
+        });
+      }
+
+      return NextResponse.json({ 
+        id: page.id, 
+        content: page.content,
+        exists: true,
+        updatedAt: page.updatedAt
+      });
+    } catch (dbError) {
+      // Se c'è un errore di database, ritorna pagina vuota invece di errore 500
+      console.error('Errore database:', dbError);
+      return NextResponse.json({ 
+        id, 
+        content: '', 
+        exists: false 
+      });
+    }
   } catch (error) {
     console.error('Errore recupero pagina:', error);
-    return NextResponse.json(
-      { error: 'Errore nel recupero della pagina' },
-      { status: 500 }
-    );
+    // In caso di errore generico, ritorna pagina vuota invece di errore 500
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id') || 'unknown';
+    return NextResponse.json({ 
+      id, 
+      content: '', 
+      exists: false 
+    });
   }
 }
 

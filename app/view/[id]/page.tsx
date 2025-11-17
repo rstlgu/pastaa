@@ -13,14 +13,13 @@ import {
   Copy,
   Check,
   Home,
-  Github,
 } from "lucide-react";
 import { importKey, decryptText } from "@/lib/crypto";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BurnTextReveal } from "@/components/burn-text-reveal";
 import { E2EBadge } from "@/components/e2e-badge";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import { GitHubBadge } from "@/components/github-badge";
@@ -46,7 +45,6 @@ export default function ViewPage() {
   const [burnAfterReading, setBurnAfterReading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pasteData, setPasteData] = useState<PasteData | null>(null);
-  const [showGitHubBadge, setShowGitHubBadge] = useState(false);
   const hasLoaded = useRef(false);
 
   useEffect(() => {
@@ -266,20 +264,7 @@ export default function ViewPage() {
           
           <div className="flex items-center gap-3">
             <E2EBadge />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <motion.button
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  onClick={() => setShowGitHubBadge(true)}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors cursor-pointer"
-                  aria-label={t('viewSourceGitHub')}
-                >
-                  <Github className="h-5 w-5" />
-                </motion.button>
-              </TooltipTrigger>
-              <TooltipContent className="hidden md:block">{t('viewSourceGitHub')}</TooltipContent>
-            </Tooltip>
+            <GitHubBadge />
             <ThemeToggle />
           </div>
         </motion.div>
@@ -358,9 +343,6 @@ export default function ViewPage() {
         </motion.div>
       </div>
     </div>
-    
-    {/* GitHub Badge */}
-    <GitHubBadge show={showGitHubBadge} onClose={() => setShowGitHubBadge(false)} />
     </TooltipProvider>
   );
 }

@@ -5,11 +5,10 @@ import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Github, Check, Loader2, Copy, Share2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { E2EBadge } from "@/components/e2e-badge";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -160,7 +159,6 @@ export default function PublicPageEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [showGitHubBadge, setShowGitHubBadge] = useState(false);
   const [pageExists, setPageExists] = useState(false);
   const [editorMode, setEditorMode] = useState<'code' | 'docs'>('code');
   const [codeLanguage, setCodeLanguage] = useState<string>('auto');
@@ -176,7 +174,24 @@ export default function PublicPageEditor() {
     async function loadPage() {
       try {
         const response = await fetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
+        
+        // Controlla se la risposta è ok prima di parsare
+        if (!response.ok) {
+          // Se la risposta non è ok, tratta come pagina nuova
+          setPageExists(false);
+          setIsLoading(false);
+          return;
+        }
+        
         const data = await response.json();
+        
+        // Controlla se c'è un errore nella risposta
+        if (data.error) {
+          console.error('Errore API:', data.error);
+          setPageExists(false);
+          setIsLoading(false);
+          return;
+        }
         
         if (data.content) {
           let loadedDocs = '<p></p>';
@@ -221,9 +236,14 @@ export default function PublicPageEditor() {
           if (data.updatedAt) {
             setLastSaved(new Date(data.updatedAt));
           }
+        } else {
+          // Nessun contenuto, pagina nuova
+          setPageExists(data.exists || false);
         }
       } catch (error) {
         console.error('Errore caricamento pagina:', error);
+        // In caso di errore, tratta come pagina nuova
+        setPageExists(false);
       } finally {
         setIsLoading(false);
       }
@@ -425,7 +445,7 @@ export default function PublicPageEditor() {
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
             {/* Left - Logo + Page ID */}
             <div className="flex items-center gap-4">
-              <Link href="/send" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <PastaLogo className="h-7 w-7 md:h-8 md:w-8 text-primary" />
                 <span className="font-bold font-righteous text-lg md:text-xl">Pastaa</span>
               </Link>
@@ -441,7 +461,7 @@ export default function PublicPageEditor() {
                         : 'text-[11px]'
                   }`}
                 >
-                  /{pageId.length > 13 ? `${pageId.slice(0, 13)}...` : pageId}
+                  /{pageId.length > 13 ? `${pageId.slice(0, 13)}..` : pageId}
                 </button>
                 {!pageExists && (
                   <span className="text-xs text-muted-foreground hidden md:inline">
@@ -475,19 +495,7 @@ export default function PublicPageEditor() {
               </div>
 
               <div className="hidden md:flex items-center gap-2">
-                <E2EBadge />
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setShowGitHubBadge(true)}
-                      className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors"
-                    >
-                      <Github className="h-5 w-5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{t('viewSourceGitHub')}</TooltipContent>
-                </Tooltip>
+                <GitHubBadge />
               </div>
 
               <ThemeToggle />
@@ -550,9 +558,6 @@ export default function PublicPageEditor() {
             </div>
           </div>
         </motion.div>
-
-        {/* GitHub Badge */}
-        <GitHubBadge show={showGitHubBadge} onClose={() => setShowGitHubBadge(false)} />
 
         {/* Mode Change Confirmation Dialog */}
         <AlertDialog open={showModeChangeDialog} onOpenChange={setShowModeChangeDialog}>
@@ -623,7 +628,7 @@ export default function PublicPageEditor() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowShareSheet(false)}
-                className="fixed inset-0 bg-black/50 z-50"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
               />
 
               {/* Bottom Sheet */}
@@ -632,19 +637,26 @@ export default function PublicPageEditor() {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="fixed bottom-0 left-0 right-0 bg-background border-t-2 border-primary rounded-t-3xl z-50 max-h-[80vh] overflow-y-auto"
+                className="fixed inset-x-0 bottom-0 z-[101] bg-card border-t-2 border-primary rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
               >
-                <div className="p-6 space-y-6">
+                <div className="p-6 pb-8">
                   {/* Handle Bar */}
-                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto" />
+                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-6" />
 
                   {/* Header */}
-                  <div className="text-center">
-                    <h2 className="text-xl font-bold">{t('shareLink')}</h2>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/20 border-2 border-primary rounded-full flex-shrink-0">
+                      <Share2 className="h-7 w-7 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">{t('shareLink')}</h2>
+                      <p className="text-xs text-muted-foreground">{t('shareDescription')}</p>
+                    </div>
                   </div>
 
-                  {/* Link Display */}
-                  <div className="space-y-3">
+                  {/* Content */}
+                  <div className="space-y-4">
+                    {/* Link Display */}
                     <div className="flex items-start gap-2 bg-muted rounded-lg p-4 border-2">
                       <p className="flex-1 font-mono text-sm break-all leading-relaxed">
                         {typeof window !== 'undefined' && `${window.location.origin}/${pageId}`}

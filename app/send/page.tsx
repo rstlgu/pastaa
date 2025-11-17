@@ -13,12 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  TooltipProvider,
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Lock, Copy, Check, Clock, Flame, Share2, Github } from "lucide-react";
+import { Lock, Copy, Check, Clock, Flame, Share2 } from "lucide-react";
 import { generateKey, exportKey, encryptText } from "@/lib/crypto";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { E2EBadge } from "@/components/e2e-badge";
@@ -26,6 +26,7 @@ import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import { FeatureBadge } from "@/components/feature-badge";
 import { GitHubBadge } from "@/components/github-badge";
+import Link from "next/link";
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -45,7 +46,6 @@ export default function HomePage() {
   const [showBurnBadge, setShowBurnBadge] = useState(false);
   const [showPasswordBadge, setShowPasswordBadge] = useState(false);
   const [showExpiryBadge, setShowExpiryBadge] = useState(false);
-  const [showGitHubBadge, setShowGitHubBadge] = useState(false);
 
   // Check localStorage for first-time feature usage
   useEffect(() => {
@@ -175,30 +175,17 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between mb-8"
         >
-          <div 
-            onClick={reset} 
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+          <Link 
+            href="/"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <PastaLogo className="h-12 w-12 text-primary" />
             <h1 className="text-3xl font-bold font-righteous tracking-wider">Pastaa</h1>
-          </div>
+          </Link>
           
           <div className="flex items-center gap-3">
             <E2EBadge />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <motion.button
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  onClick={() => setShowGitHubBadge(true)}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors cursor-pointer"
-                  aria-label={t('viewSourceGitHub')}
-                >
-                  <Github className="h-5 w-5" />
-                </motion.button>
-              </TooltipTrigger>
-              <TooltipContent className="hidden md:block">{t('viewSourceGitHub')}</TooltipContent>
-            </Tooltip>
+            <GitHubBadge />
             <ThemeToggle />
           </div>
         </motion.div>
@@ -504,9 +491,6 @@ export default function HomePage() {
       <FeatureBadge feature="burn" show={showBurnBadge} onClose={() => setShowBurnBadge(false)} />
       <FeatureBadge feature="password" show={showPasswordBadge} onClose={() => setShowPasswordBadge(false)} />
       <FeatureBadge feature="expiry" show={showExpiryBadge} onClose={() => setShowExpiryBadge(false)} />
-      
-      {/* GitHub Badge */}
-      <GitHubBadge show={showGitHubBadge} onClose={() => setShowGitHubBadge(false)} />
     </TooltipProvider>
   );
 }
