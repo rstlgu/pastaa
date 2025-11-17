@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Github, Home, Save, Check, Loader2, Code, FileText } from "lucide-react";
+import { Github, Check, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { E2EBadge } from "@/components/e2e-badge";
 import { GitHubBadge } from "@/components/github-badge";
@@ -27,7 +26,6 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { EditorToolbar } from '@/components/editor-toolbar';
-import { useTheme } from '@/components/theme-provider';
 import { toast } from 'sonner';
 import './editor.css';
 import { javascript } from '@codemirror/lang-javascript';
@@ -152,9 +150,7 @@ function detectLanguage(content: string): string {
 
 export default function PublicPageEditor() {
   const { t } = useLanguage();
-  const { theme } = useTheme();
   const params = useParams();
-  const router = useRouter();
   const pageId = params.id as string;
   
   const [contentDocs, setContentDocs] = useState("");
@@ -283,7 +279,7 @@ export default function PublicPageEditor() {
     if (editor && !isLoading && contentDocs !== editor.getHTML()) {
       editor.commands.setContent(contentDocs || '<p></p>');
     }
-  }, [editor, isLoading]);
+  }, [editor, isLoading, contentDocs]);
 
   // Funzione per verificare se c'è contenuto nell'editor
   const hasContent = (mode: 'code' | 'docs') => {
