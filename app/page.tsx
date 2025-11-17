@@ -25,6 +25,7 @@ import { E2EBadge } from "@/components/e2e-badge";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import { FeatureBadge } from "@/components/feature-badge";
+import { GitHubBadge } from "@/components/github-badge";
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -44,6 +45,7 @@ export default function HomePage() {
   const [showBurnBadge, setShowBurnBadge] = useState(false);
   const [showPasswordBadge, setShowPasswordBadge] = useState(false);
   const [showExpiryBadge, setShowExpiryBadge] = useState(false);
+  const [showGitHubBadge, setShowGitHubBadge] = useState(false);
 
   // Check localStorage for first-time feature usage
   useEffect(() => {
@@ -185,17 +187,15 @@ export default function HomePage() {
             <E2EBadge />
             <Tooltip>
               <TooltipTrigger asChild>
-                <motion.a
+                <motion.button
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  href="https://github.com/rstlgu/pastaa.git"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors"
+                  onClick={() => setShowGitHubBadge(true)}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors cursor-pointer"
                   aria-label={t('viewSourceGitHub')}
                 >
                   <Github className="h-5 w-5" />
-                </motion.a>
+                </motion.button>
               </TooltipTrigger>
               <TooltipContent className="hidden md:block">{t('viewSourceGitHub')}</TooltipContent>
             </Tooltip>
@@ -221,15 +221,16 @@ export default function HomePage() {
                 />
 
                 {/* Floating Options - Above Bottom Controls */}
-                <div className="absolute bottom-20 left-4 right-4 flex gap-3 items-end justify-start">
+                <div className="absolute bottom-20 left-4 right-4 md:left-4 md:right-auto flex flex-col md:flex-row gap-3 items-stretch md:items-end">
                   <AnimatePresence>
                     {usePassword && (
                       <motion.div
+                        key="password-input"
                         initial={{ y: 20, opacity: 0, scale: 0.9 }}
                         animate={{ y: 0, opacity: 1, scale: 1 }}
                         exit={{ y: 20, opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2 }}
-                        className="flex-1 max-w-xs"
+                        className="w-full md:w-64"
                       >
                         <Input
                           type="password"
@@ -244,11 +245,12 @@ export default function HomePage() {
 
                     {showExpiry && (
                       <motion.div
+                        key="expiry-select"
                         initial={{ y: 20, opacity: 0, scale: 0.9 }}
                         animate={{ y: 0, opacity: 1, scale: 1 }}
                         exit={{ y: 20, opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2, delay: 0.05 }}
-                        className="w-40"
+                        className="w-full md:w-40"
                       >
                         <Select value={expiresIn} onValueChange={setExpiresIn}>
                           <SelectTrigger className="border-2 border-primary backdrop-blur-sm bg-card/95 h-10">
@@ -502,6 +504,9 @@ export default function HomePage() {
       <FeatureBadge feature="burn" show={showBurnBadge} onClose={() => setShowBurnBadge(false)} />
       <FeatureBadge feature="password" show={showPasswordBadge} onClose={() => setShowPasswordBadge(false)} />
       <FeatureBadge feature="expiry" show={showExpiryBadge} onClose={() => setShowExpiryBadge(false)} />
+      
+      {/* GitHub Badge */}
+      <GitHubBadge show={showGitHubBadge} onClose={() => setShowGitHubBadge(false)} />
     </TooltipProvider>
   );
 }

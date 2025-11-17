@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Shield, Check } from "lucide-react";
+import { Lock, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/language-provider";
 
@@ -92,18 +92,6 @@ export function E2EBadge() {
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/30">
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-green-500 mb-1">{t('zeroKnowledge')}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {t('zeroKnowledgeDesc')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </motion.div>
@@ -187,18 +175,6 @@ export function E2EBadge() {
                           <p className="text-sm font-medium">{t('localDecryption')}</p>
                           <p className="text-xs text-muted-foreground">{t('localDecryptionDescLong')}</p>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-green-500/10 rounded-lg p-4 border-2 border-green-500/30">
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-green-500 mb-1">{t('zeroKnowledge')}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('zeroKnowledgeDescLong')}
-                        </p>
                       </div>
                     </div>
                   </div>

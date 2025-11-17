@@ -40,9 +40,9 @@ export function FeatureBadge({ feature, show, onClose }: FeatureBadgeProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3 }}
-          className="fixed bottom-6 left-0 right-0 z-50 px-4"
+          className="fixed bottom-6 left-0 right-0 z-50 px-4 flex justify-center"
         >
-          <div className="bg-primary text-primary-foreground rounded-xl p-4 shadow-2xl border-2 border-primary/50 backdrop-blur-sm">
+          <div className="bg-primary text-primary-foreground rounded-xl p-4 shadow-2xl border-2 border-primary/50 backdrop-blur-sm w-full max-w-2xl">
             <div className="flex items-start gap-3 mb-3">
               <div className="flex-shrink-0 mt-0.5">
                 <Icon className="h-5 w-5" />

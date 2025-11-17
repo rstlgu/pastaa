@@ -13,7 +13,7 @@ export const translations = {
     // Homepage
     appName: 'Pastaa',
     appTagline: 'Condivisione testo sicura con crittografia end-to-end',
-    textPlaceholder: 'Inserisci il testo da cifrare...',
+    textPlaceholder: 'Inserisci il testo...',
     encryptAndShare: 'Condividi',
     encrypting: 'Cifratura...',
     
@@ -90,6 +90,14 @@ export const translations = {
     
     // GitHub
     viewSourceGitHub: 'Visualizza codice sorgente su GitHub',
+    
+    // GitHub Badge
+    openSourceTitle: 'Open Source & Self-Hostable',
+    openSourceSubtitle: 'Codice verificabile e distribuibile',
+    openSourceCodeTitle: 'Codice Open Source',
+    openSourceCodeDesc: 'Ispeziona ogni riga di codice per verificare la sicurezza. Nessuna backdoor, tutto è trasparente.',
+    selfHostableTitle: 'Self-Hostable',
+    selfHostableDesc: 'Fai facilmente self-hosting della tua istanza personale. Pieno controllo sui tuoi dati.',
   },
   en: {
     // Common
@@ -103,7 +111,7 @@ export const translations = {
     // Homepage
     appName: 'Pastaa',
     appTagline: 'Secure text sharing with end-to-end encryption',
-    textPlaceholder: 'Enter text to encrypt...',
+    textPlaceholder: 'Enter text...',
     encryptAndShare: 'Share',
     encrypting: 'Encrypting...',
     
@@ -180,6 +188,14 @@ export const translations = {
     
     // GitHub
     viewSourceGitHub: 'View source code on GitHub',
+    
+    // GitHub Badge
+    openSourceTitle: 'Open Source & Self-Hostable',
+    openSourceSubtitle: 'Verifiable and distributable code',
+    openSourceCodeTitle: 'Open Source Code',
+    openSourceCodeDesc: 'Inspect every line of code to verify security. No backdoors, everything is transparent.',
+    selfHostableTitle: 'Self-Hostable',
+    selfHostableDesc: 'Easily self-host your personal instance. Full control over your data.',
   }
 };
 

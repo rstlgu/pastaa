@@ -23,6 +23,7 @@ import { E2EBadge } from "@/components/e2e-badge";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
+import { GitHubBadge } from "@/components/github-badge";
 
 interface PasteData {
   encryptedContent: string;
@@ -45,6 +46,7 @@ export default function ViewPage() {
   const [burnAfterReading, setBurnAfterReading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pasteData, setPasteData] = useState<PasteData | null>(null);
+  const [showGitHubBadge, setShowGitHubBadge] = useState(false);
   const hasLoaded = useRef(false);
 
   useEffect(() => {
@@ -266,17 +268,15 @@ export default function ViewPage() {
             <E2EBadge />
             <Tooltip>
               <TooltipTrigger asChild>
-                <motion.a
+                <motion.button
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  href="https://github.com/rstlgu/pastaa.git"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors"
+                  onClick={() => setShowGitHubBadge(true)}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-primary bg-background hover:bg-muted h-10 w-10 transition-colors cursor-pointer"
                   aria-label={t('viewSourceGitHub')}
                 >
                   <Github className="h-5 w-5" />
-                </motion.a>
+                </motion.button>
               </TooltipTrigger>
               <TooltipContent className="hidden md:block">{t('viewSourceGitHub')}</TooltipContent>
             </Tooltip>
@@ -358,6 +358,9 @@ export default function ViewPage() {
         </motion.div>
       </div>
     </div>
+    
+    {/* GitHub Badge */}
+    <GitHubBadge show={showGitHubBadge} onClose={() => setShowGitHubBadge(false)} />
     </TooltipProvider>
   );
 }
