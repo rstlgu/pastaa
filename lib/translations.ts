@@ -14,7 +14,7 @@ export const translations = {
     appName: 'Pastaa',
     appTagline: 'Condivisione testo sicura con crittografia end-to-end',
     textPlaceholder: 'Inserisci il testo da cifrare...',
-    encryptAndShare: 'Cifra e Condividi',
+    encryptAndShare: 'Condividi',
     encrypting: 'Cifratura...',
     
     // Options
@@ -104,7 +104,7 @@ export const translations = {
     appName: 'Pastaa',
     appTagline: 'Secure text sharing with end-to-end encryption',
     textPlaceholder: 'Enter text to encrypt...',
-    encryptAndShare: 'Encrypt & Share',
+    encryptAndShare: 'Share',
     encrypting: 'Encrypting...',
     
     // Options

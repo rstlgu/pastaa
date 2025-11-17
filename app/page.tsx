@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { E2EBadge } from "@/components/e2e-badge";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
+import { FeatureBadge } from "@/components/feature-badge";
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -38,6 +39,38 @@ export default function HomePage() {
   const [shortId, setShortId] = useState("");
   const [keyString, setKeyString] = useState("");
   const [copied, setCopied] = useState(false);
+  
+  // Feature badges state
+  const [showBurnBadge, setShowBurnBadge] = useState(false);
+  const [showPasswordBadge, setShowPasswordBadge] = useState(false);
+  const [showExpiryBadge, setShowExpiryBadge] = useState(false);
+
+  // Check localStorage for first-time feature usage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasSeenBurn = localStorage.getItem('pastaa_seen_burn');
+      const hasSeenPassword = localStorage.getItem('pastaa_seen_password');
+      const hasSeenExpiry = localStorage.getItem('pastaa_seen_expiry');
+      
+      if (!hasSeenBurn && burnAfterReading) {
+        setShowBurnBadge(true);
+        localStorage.setItem('pastaa_seen_burn', 'true');
+        setTimeout(() => setShowBurnBadge(false), 5000);
+      }
+      
+      if (!hasSeenPassword && usePassword) {
+        setShowPasswordBadge(true);
+        localStorage.setItem('pastaa_seen_password', 'true');
+        setTimeout(() => setShowPasswordBadge(false), 5000);
+      }
+      
+      if (!hasSeenExpiry && showExpiry) {
+        setShowExpiryBadge(true);
+        localStorage.setItem('pastaa_seen_expiry', 'true');
+        setTimeout(() => setShowExpiryBadge(false), 5000);
+      }
+    }
+  }, [burnAfterReading, usePassword, showExpiry]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -246,14 +279,14 @@ export default function HomePage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
+                            key={`burn-${burnAfterReading}`}
                             type="button"
                             variant={burnAfterReading ? "default" : "outline"}
                             size="icon"
-                            onClick={(e) => {
+                            onClick={() => {
                               setBurnAfterReading(!burnAfterReading);
-                              e.currentTarget.blur();
                             }}
-                            className="rounded-full border-2"
+                            className="rounded-full border-2 active:scale-95 transition-transform"
                           >
                             <Flame className="h-5 w-5" />
                           </Button>
@@ -265,14 +298,14 @@ export default function HomePage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
+                            key={`password-${usePassword}`}
                             type="button"
                             variant={usePassword ? "default" : "outline"}
                             size="icon"
-                            onClick={(e) => {
+                            onClick={() => {
                               setUsePassword(!usePassword);
-                              e.currentTarget.blur();
                             }}
-                            className="rounded-full border-2"
+                            className="rounded-full border-2 active:scale-95 transition-transform"
                           >
                             <Lock className="h-5 w-5" />
                           </Button>
@@ -284,14 +317,14 @@ export default function HomePage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
+                            key={`expiry-${showExpiry}`}
                             type="button"
                             variant={showExpiry ? "default" : "outline"}
                             size="icon"
-                            onClick={(e) => {
+                            onClick={() => {
                               setShowExpiry(!showExpiry);
-                              e.currentTarget.blur();
                             }}
-                            className="rounded-full border-2"
+                            className="rounded-full border-2 active:scale-95 transition-transform"
                           >
                             <Clock className="h-5 w-5" />
                           </Button>
@@ -464,6 +497,11 @@ export default function HomePage() {
         )}
         </div>
       </div>
+      
+      {/* Feature Info Badges */}
+      <FeatureBadge feature="burn" show={showBurnBadge} onClose={() => setShowBurnBadge(false)} />
+      <FeatureBadge feature="password" show={showPasswordBadge} onClose={() => setShowPasswordBadge(false)} />
+      <FeatureBadge feature="expiry" show={showExpiryBadge} onClose={() => setShowExpiryBadge(false)} />
     </TooltipProvider>
   );
 }
