@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Github, Check, Loader2, Copy, Share2 } from "lucide-react";
+import { Check, Loader2, Copy, Share2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";

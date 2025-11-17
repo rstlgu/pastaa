@@ -21,7 +21,6 @@ import { BurnTextReveal } from "@/components/burn-text-reveal";
 import { E2EBadge } from "@/components/e2e-badge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PastaLogo } from "@/components/pasta-logo";
-import { useLanguage } from "@/components/language-provider";
 import { GitHubBadge } from "@/components/github-badge";
 
 interface PasteData {
@@ -34,7 +33,6 @@ interface PasteData {
 }
 
 export default function ViewPage() {
-  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
