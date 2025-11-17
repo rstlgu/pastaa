@@ -21,3 +21,10 @@ model Paste {
   views             Int       @default(0)
 }
 
+model PublicPage {
+  id        String   @id @unique
+  content   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

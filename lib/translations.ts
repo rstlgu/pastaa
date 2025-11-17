@@ -98,6 +98,20 @@ export const translations = {
     openSourceCodeDesc: 'Ispeziona ogni riga di codice per verificare la sicurezza. Nessuna backdoor, tutto è trasparente.',
     selfHostableTitle: 'Self-Hostable',
     selfHostableDesc: 'Fai facilmente self-hosting della tua istanza personale. Pieno controllo sui tuoi dati.',
+    
+    // Editor Mode Change
+    changeModeTitle: 'Cambiare modalità?',
+    changeModeDescription: 'Hai del contenuto nella modalità corrente. Se cambi modalità, questo contenuto verrà cancellato. Vuoi continuare?',
+    continueAction: 'Continua',
+    
+    // Editor Modes
+    codeMode: 'Modalità Codice',
+    docsMode: 'Modalità Documenti',
+    languageLabel: 'Linguaggio',
+    
+    // Public Page
+    publicPageWarning: 'Pagina pubblica: chiunque conosce l\'URL può visualizzare e modificare questo contenuto',
+    linkCopied: 'Link copiato',
   },
   en: {
     // Common
@@ -196,6 +210,20 @@ export const translations = {
     openSourceCodeDesc: 'Inspect every line of code to verify security. No backdoors, everything is transparent.',
     selfHostableTitle: 'Self-Hostable',
     selfHostableDesc: 'Easily self-host your personal instance. Full control over your data.',
+    
+    // Editor Mode Change
+    changeModeTitle: 'Change mode?',
+    changeModeDescription: 'You have content in the current mode. If you change mode, this content will be deleted. Do you want to continue?',
+    continueAction: 'Continue',
+    
+    // Editor Modes
+    codeMode: 'Code Mode',
+    docsMode: 'Docs Mode',
+    languageLabel: 'Language',
+    
+    // Public Page
+    publicPageWarning: 'Public page: anyone with the URL can view and edit this content',
+    linkCopied: 'Link copied',
   }
 };
 

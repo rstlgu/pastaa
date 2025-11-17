@@ -3,6 +3,7 @@ import { Inter, Righteous } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/components/language-provider";
+import { ThemedToaster } from "@/components/themed-toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 const righteous = Righteous({ 
@@ -33,6 +34,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="dark" storageKey="pasta-theme">
           <LanguageProvider>
             {children}
+            <ThemedToaster />
           </LanguageProvider>
         </ThemeProvider>
       </body>
