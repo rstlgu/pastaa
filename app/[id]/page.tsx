@@ -768,7 +768,7 @@ export default function PublicPageEditor() {
                   />
                 </div>
               ) : (
-                <div className="h-full" style={{ backgroundColor: theme === 'dark' ? '#0d1117' : '#f5f5f5' }}>
+                <div className="h-full" style={{ backgroundColor: theme === 'dark' ? 'hsl(0, 0%, 5%)' : '#f5f5f5' }}>
                   <CodeMirror
                     value={contentCode || ''}
                     height="100%"
@@ -804,7 +804,7 @@ export default function PublicPageEditor() {
                       autocompletion: true,
                     }}
                     style={{
-                      backgroundColor: theme === 'dark' ? '#0d1117' : '#f5f5f5',
+                      backgroundColor: theme === 'dark' ? 'hsl(0, 0%, 5%)' : '#f5f5f5',
                       minHeight: '100%',
                     }}
                   />
