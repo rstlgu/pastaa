@@ -120,6 +120,25 @@
   animation: remoteUpdateHighlight 1s ease-in-out;
 }
 
+/* Evidenziazione nuovo testo remoto in CodeMirror */
+.cm-remote-highlight {
+  background-color: rgba(234, 179, 8, 0.4) !important;
+  animation: remoteTextHighlight 2s ease-in-out;
+  border-radius: 2px;
+}
+
+@keyframes remoteTextHighlight {
+  0% {
+    background-color: rgba(234, 179, 8, 0.6);
+  }
+  50% {
+    background-color: rgba(234, 179, 8, 0.4);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 /* Evidenziazione per TipTap */
 .ProseMirror.remote-update {
   animation: remoteUpdateHighlight 1s ease-in-out;

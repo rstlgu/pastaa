@@ -43,6 +43,8 @@ import { sql } from '@codemirror/lang-sql';
 import { xml } from '@codemirror/lang-xml';
 import { java } from '@codemirror/lang-java';
 import { EditorView } from '@codemirror/view';
+import { StateEffect, StateField } from '@codemirror/state';
+import { Decoration, DecorationSet } from '@codemirror/view';
 
 const CodeMirror = dynamic(() => import('@uiw/react-codemirror'), { ssr: false });
 
@@ -178,6 +180,8 @@ export default function PublicPageEditor() {
   const lastSavedContentRef = useRef<string>("");
   const isLocalChangeRef = useRef(false);
   const lastSyncTimeRef = useRef<string>("");
+  const previousContentRef = useRef<{ docs: string; code: string }>({ docs: '', code: '' });
+  const codeMirrorViewRef = useRef<EditorView | null>(null);
 
   // Carica il contenuto della pagina
   useEffect(() => {
@@ -227,6 +231,7 @@ export default function PublicPageEditor() {
           
           setContentDocs(loadedDocs);
           setContentCode(loadedCode);
+          previousContentRef.current = { docs: loadedDocs, code: loadedCode };
           
           // Determina automaticamente la modalità in base al contenuto
           const hasCodeContent = loadedCode.trim().length > 0;
@@ -364,6 +369,64 @@ export default function PublicPageEditor() {
     }
   }, [editor, isLoading, contentDocs]);
 
+  // Effetto per evidenziare nuovo testo in CodeMirror
+  const highlightNewTextEffect = StateEffect.define<{ from: number; to: number }>();
+
+  const highlightNewTextField = StateField.define<DecorationSet>({
+    create() {
+      return Decoration.none;
+    },
+    update(decorations, tr) {
+      decorations = decorations.map(tr.changes);
+      for (const effect of tr.effects) {
+        if (effect.is(highlightNewTextEffect)) {
+          const { from, to } = effect.value;
+          const highlight = Decoration.mark({
+            class: 'cm-remote-highlight',
+            attributes: { 'data-remote-update': 'true' },
+          });
+          decorations = decorations.update({
+            add: [highlight.range(from, to)],
+          });
+        }
+      }
+      return decorations;
+    },
+    provide: (f) => EditorView.decorations.from(f),
+  });
+
+  // Funzione per trovare le differenze tra due testi
+  const findTextDifferences = (oldText: string, newText: string): Array<{ from: number; to: number }> => {
+    const differences: Array<{ from: number; to: number }> = [];
+    
+    // Se il nuovo testo è più lungo, evidenzia la parte aggiunta
+    if (newText.length > oldText.length) {
+      // Trova dove inizia la differenza
+      let startDiff = 0;
+      while (startDiff < oldText.length && oldText[startDiff] === newText[startDiff]) {
+        startDiff++;
+      }
+      
+      // Trova dove finisce la differenza (dal fondo)
+      let endOld = oldText.length;
+      let endNew = newText.length;
+      while (endOld > startDiff && endNew > startDiff && 
+             oldText[endOld - 1] === newText[endNew - 1]) {
+        endOld--;
+        endNew--;
+      }
+      
+      if (endNew > startDiff) {
+        differences.push({ from: startDiff, to: endNew });
+      }
+    } else if (newText !== oldText) {
+      // Se il testo è cambiato ma non più lungo, evidenzia tutto il nuovo testo
+      differences.push({ from: 0, to: newText.length });
+    }
+    
+    return differences;
+  };
+
   // Sincronizzazione in tempo reale
   const handleRemoteUpdate = useCallback((content: string, updatedAt: string) => {
     // Evita aggiornamenti se l'utente sta modificando localmente o se è lo stesso aggiornamento
@@ -379,23 +442,59 @@ export default function PublicPageEditor() {
         // Aggiorna solo se il contenuto è diverso
         const currentContent = JSON.stringify({ docs: contentDocs, code: contentCode });
         if (content !== currentContent) {
-          // Evidenzia le modifiche remote aggiungendo una classe temporanea
-          const editorElement = document.querySelector('.ProseMirror, .cm-editor');
-          if (editorElement) {
-            editorElement.classList.add('remote-update');
-            setTimeout(() => {
-              editorElement.classList.remove('remote-update');
-            }, 1000);
-          }
+          const newDocs = parsed.docs || '<p></p>';
+          const newCode = parsed.code || '';
           
-          setContentDocs(parsed.docs || '<p></p>');
-          setContentCode(parsed.code || '');
+          // Aggiorna contenuti
+          setContentDocs(newDocs);
+          setContentCode(newCode);
           lastSavedContentRef.current = content;
           
-          // Aggiorna anche l'editor TipTap se è in modalità docs
-          if (editor && editorMode === 'docs') {
-            editor.commands.setContent(parsed.docs || '<p></p>');
+          // Evidenzia nuovo testo per CodeMirror
+          if (editorMode === 'code' && newCode !== previousContentRef.current.code) {
+            const differences = findTextDifferences(previousContentRef.current.code, newCode);
+            if (differences.length > 0) {
+              // Evidenzia dopo un breve delay per permettere il rendering
+              setTimeout(() => {
+                if (codeMirrorViewRef.current) {
+                  const effects = differences.map(diff => 
+                    highlightNewTextEffect.of({ from: diff.from, to: diff.to })
+                  );
+                  codeMirrorViewRef.current.dispatch({
+                    effects,
+                  });
+                  
+                  // Rimuovi evidenziazione dopo 2 secondi
+                  setTimeout(() => {
+                    if (codeMirrorViewRef.current) {
+                      codeMirrorViewRef.current.dispatch({
+                        effects: [],
+                      });
+                    }
+                  }, 2000);
+                }
+              }, 100);
+            }
           }
+          
+          // Evidenzia nuovo testo per TipTap
+          if (editorMode === 'docs' && editor && newDocs !== previousContentRef.current.docs) {
+            editor.commands.setContent(newDocs);
+            
+            // Aggiungi classe temporanea per evidenziare
+            setTimeout(() => {
+              const proseMirror = document.querySelector('.ProseMirror');
+              if (proseMirror) {
+                proseMirror.classList.add('remote-update');
+                setTimeout(() => {
+                  proseMirror.classList.remove('remote-update');
+                }, 2000);
+              }
+            }, 100);
+          }
+          
+          // Aggiorna riferimento al contenuto precedente
+          previousContentRef.current = { docs: newDocs, code: newCode };
         }
       }
     } catch {
@@ -525,7 +624,7 @@ export default function PublicPageEditor() {
   }
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background flex flex-col">
         {/* Navbar */}
         <motion.nav
@@ -611,11 +710,11 @@ export default function PublicPageEditor() {
                 {/* Avatar altri utenti - Desktop */}
                 {users.length > 0 && (
                   <div className="hidden md:flex items-center gap-2">
-                    <AvatarGroup className="mr-2">
+                    <div className="flex -space-x-2 *:data-[slot=avatar]:ring-background *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:grayscale mr-2">
                       {users.map((user) => (
                         <Tooltip key={user.id}>
                           <TooltipTrigger asChild>
-                            <Avatar>
+                            <Avatar className="cursor-pointer">
                               <AvatarImage src={user.avatar} alt={user.name} />
                               <AvatarFallback>
                                 {user.name.charAt(0).toUpperCase()}
@@ -627,7 +726,7 @@ export default function PublicPageEditor() {
                           </TooltipContent>
                         </Tooltip>
                       ))}
-                    </AvatarGroup>
+                    </div>
                   </div>
                 )}
                 <GitHubBadge />
@@ -669,7 +768,7 @@ export default function PublicPageEditor() {
                   />
                 </div>
               ) : (
-                <div className="h-full" style={{ backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5' }}>
+                <div className="h-full" style={{ backgroundColor: theme === 'dark' ? '#0d1117' : '#f5f5f5' }}>
                   <CodeMirror
                     value={contentCode || ''}
                     height="100%"
@@ -681,7 +780,13 @@ export default function PublicPageEditor() {
                         : detectedLanguage !== 'auto' 
                           ? [getLanguageExtension(detectedLanguage)]
                           : []),
+                      highlightNewTextField,
                       EditorView.updateListener.of((update) => {
+                        // Salva riferimento alla view di CodeMirror
+                        if (update.view) {
+                          codeMirrorViewRef.current = update.view;
+                        }
+                        
                         // Traccia selezione per CodeMirror
                         if (update.selectionSet && sendSelection && editorMode === 'code') {
                           const selection = update.state.selection.main;
@@ -699,7 +804,7 @@ export default function PublicPageEditor() {
                       autocompletion: true,
                     }}
                     style={{
-                      backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5',
+                      backgroundColor: theme === 'dark' ? '#0d1117' : '#f5f5f5',
                       minHeight: '100%',
                     }}
                   />
