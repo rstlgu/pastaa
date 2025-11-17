@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Copy, Share2 } from "lucide-react";
+import { Check, Loader2, Copy, Share2, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +28,9 @@ import { EditorToolbar } from '@/components/editor-toolbar';
 import { useTheme } from '@/components/theme-provider';
 import { useRealtimeSync } from '@/lib/use-realtime-sync';
 import { usePresence } from '@/lib/use-presence';
-import { Avatar, AvatarGroup } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback, AvatarGroup } from '@/components/ui/avatar';
 import { RemoteCursors } from '@/components/remote-cursors';
+import { RemoteSelections } from '@/components/remote-selections';
 import './editor.css';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
@@ -41,6 +42,7 @@ import { php } from '@codemirror/lang-php';
 import { sql } from '@codemirror/lang-sql';
 import { xml } from '@codemirror/lang-xml';
 import { java } from '@codemirror/lang-java';
+import { EditorView } from '@codemirror/view';
 
 const CodeMirror = dynamic(() => import('@uiw/react-codemirror'), { ssr: false });
 
@@ -172,6 +174,7 @@ export default function PublicPageEditor() {
   const [pendingMode, setPendingMode] = useState<'code' | 'docs' | null>(null);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showUsersSheet, setShowUsersSheet] = useState(false);
   const lastSavedContentRef = useRef<string>("");
   const isLocalChangeRef = useRef(false);
   const lastSyncTimeRef = useRef<string>("");
@@ -408,7 +411,7 @@ export default function PublicPageEditor() {
   });
 
   // Sistema di presenza utenti
-  const { users, sendCursor } = usePresence({
+  const { users, sendCursor, sendSelection } = usePresence({
     pageId,
     enabled: !isLoading && pageExists,
   });
@@ -584,16 +587,18 @@ export default function PublicPageEditor() {
 
               {/* Avatar altri utenti - Mobile: sotto la navbar, Desktop: nella navbar */}
               {users.length > 0 && (
-                <div className="md:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-b border-primary/20 px-4 py-2 flex items-center gap-2">
+                <div 
+                  className="md:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-b border-primary/20 px-4 py-2 flex items-center gap-2 cursor-pointer"
+                  onClick={() => setShowUsersSheet(true)}
+                >
                   <AvatarGroup>
                     {users.map((user) => (
-                      <Avatar
-                        key={user.id}
-                        src={user.avatar}
-                        alt={user.name}
-                        fallback={user.name.charAt(0)}
-                        className="border-2 border-primary/30"
-                      />
+                      <Avatar key={user.id}>
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>
+                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
                     ))}
                   </AvatarGroup>
                   <span className="text-xs text-muted-foreground">
@@ -608,13 +613,19 @@ export default function PublicPageEditor() {
                   <div className="hidden md:flex items-center gap-2">
                     <AvatarGroup className="mr-2">
                       {users.map((user) => (
-                        <Avatar
-                          key={user.id}
-                          src={user.avatar}
-                          alt={user.name}
-                          fallback={user.name.charAt(0)}
-                          className="border-2 border-primary/30"
-                        />
+                        <Tooltip key={user.id}>
+                          <TooltipTrigger asChild>
+                            <Avatar>
+                              <AvatarImage src={user.avatar} alt={user.name} />
+                              <AvatarFallback>
+                                {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{user.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       ))}
                     </AvatarGroup>
                   </div>
@@ -664,13 +675,22 @@ export default function PublicPageEditor() {
                     height="100%"
                     onChange={(value) => setContentCode(value)}
                     theme={theme === 'dark' ? 'dark' : 'light'}
-                    extensions={
-                      codeLanguage !== 'auto' 
+                    extensions={[
+                      ...(codeLanguage !== 'auto' 
                         ? [getLanguageExtension(codeLanguage)] 
                         : detectedLanguage !== 'auto' 
                           ? [getLanguageExtension(detectedLanguage)]
-                          : []
-                    }
+                          : []),
+                      EditorView.updateListener.of((update) => {
+                        // Traccia selezione per CodeMirror
+                        if (update.selectionSet && sendSelection && editorMode === 'code') {
+                          const selection = update.state.selection.main;
+                          if (selection.from !== selection.to) {
+                            sendSelection(selection.from, selection.to);
+                          }
+                        }
+                      }),
+                    ]}
                     basicSetup={{
                       lineNumbers: true,
                       highlightActiveLine: true,
@@ -859,6 +879,83 @@ export default function PublicPageEditor() {
 
         {/* Cursori remoti */}
         <RemoteCursors users={users} />
+
+        {/* Selezioni remote */}
+        <RemoteSelections 
+          users={users} 
+          editorMode={editorMode}
+          content={editorMode === 'code' ? contentCode : contentDocs}
+        />
+
+        {/* Users Bottom Sheet - Mobile Only */}
+        <AnimatePresence>
+          {showUsersSheet && typeof window !== 'undefined' && window.innerWidth < 768 && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowUsersSheet(false)}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+              />
+
+              {/* Bottom Sheet */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="fixed inset-x-0 bottom-0 z-[101] bg-card border-t-2 border-primary rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
+              >
+                <div className="p-6 pb-8">
+                  {/* Handle Bar */}
+                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-6" />
+
+                  {/* Header */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/20 border-2 border-primary rounded-full flex-shrink-0">
+                      <Users className="h-7 w-7 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold">Utenti Online</h2>
+                      <p className="text-xs text-muted-foreground">
+                        {users.length} {users.length === 1 ? 'utente' : 'utenti'} connesso{users.length > 1 ? 'i' : ''}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowUsersSheet(false)}
+                      className="h-10 w-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Users List */}
+                  <div className="space-y-3">
+                    {users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border-2 border-border hover:bg-muted/50 transition-colors"
+                      >
+                        <Avatar>
+                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarFallback>
+                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">Online</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </TooltipProvider>
   );

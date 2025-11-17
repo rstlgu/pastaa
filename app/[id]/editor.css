@@ -125,3 +125,40 @@
   animation: remoteUpdateHighlight 1s ease-in-out;
 }
 
+/* Animazione per selezioni remote */
+@keyframes remoteSelectionPulse {
+  0% {
+    opacity: 0.4;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scaleY(1.02);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scaleY(1);
+  }
+}
+
+.remote-selection-highlight {
+  animation: remoteSelectionPulse 1s ease-in-out infinite;
+}
+
+/* Evidenziazione selezione remota per ProseMirror */
+.ProseMirror[data-remote-selection] {
+  position: relative;
+}
+
+.ProseMirror[data-remote-selection]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(234, 179, 8, 0.5);
+  animation: remoteSelectionPulse 1s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+

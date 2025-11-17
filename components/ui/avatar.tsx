@@ -16,6 +16,7 @@ const Avatar = React.forwardRef<
   return (
     <div
       ref={ref}
+      data-slot="avatar"
       className={cn(
         "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
         className
@@ -39,6 +40,37 @@ const Avatar = React.forwardRef<
 });
 Avatar.displayName = "Avatar";
 
+const AvatarImage = React.forwardRef<
+  HTMLImageElement,
+  React.ImgHTMLAttributes<HTMLImageElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <img
+      ref={ref}
+      className={cn("aspect-square h-full w-full object-cover", className)}
+      {...props}
+    />
+  );
+});
+AvatarImage.displayName = "AvatarImage";
+
+const AvatarFallback = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex h-full w-full items-center justify-center bg-primary/20 text-primary font-medium text-sm",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+AvatarFallback.displayName = "AvatarFallback";
+
 const AvatarGroup = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -46,12 +78,15 @@ const AvatarGroup = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex -space-x-2", className)}
+      className={cn(
+        "*:data-[slot=avatar]:ring-background flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:grayscale",
+        className
+      )}
       {...props}
     />
   );
 });
 AvatarGroup.displayName = "AvatarGroup";
 
-export { Avatar, AvatarGroup };
+export { Avatar, AvatarImage, AvatarFallback, AvatarGroup };
 

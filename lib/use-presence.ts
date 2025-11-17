@@ -36,7 +36,6 @@ export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
         userId: userIdRef.current,
         name: userNameRef.current,
         avatar: userAvatarRef.current,
-        userAgent: userAgentRef.current,
       }),
     }).catch(() => {
       // Ignora errori di rete
@@ -56,11 +55,14 @@ export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
     
     lastCursorRef.current = { x, y };
     
+    // Invia sempre con name e avatar per assicurarsi che l'utente esista
     fetch(`/api/public-page/${pageId}/presence`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId: userIdRef.current,
+        name: userNameRef.current,
+        avatar: userAvatarRef.current,
         cursor: { x, y },
       }),
     }).catch(() => {
@@ -72,11 +74,14 @@ export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
   const sendSelection = useCallback((start: number, end: number) => {
     if (!enabled || !pageId) return;
     
+    // Invia sempre con name e avatar per assicurarsi che l'utente esista
     fetch(`/api/public-page/${pageId}/presence`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId: userIdRef.current,
+        name: userNameRef.current,
+        avatar: userAvatarRef.current,
         selection: { start, end },
       }),
     }).catch(() => {

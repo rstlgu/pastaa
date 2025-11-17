@@ -10,7 +10,7 @@ const presenceStore = new Map<string, Map<string, {
   lastSeen: number;
 }>>();
 
-const PRESENCE_TIMEOUT = 5000; // Rimuovi utenti dopo 5 secondi di inattività
+const PRESENCE_TIMEOUT = 10000; // Rimuovi utenti dopo 10 secondi di inattività (aumentato per evitare flickering)
 
 // POST - Aggiorna presenza utente
 export async function POST(
@@ -35,14 +35,31 @@ export async function POST(
     
     // Aggiorna o crea presenza utente
     const existing = pagePresence.get(userId);
-    pagePresence.set(userId, {
-      userId,
-      name: name || existing?.name || 'Anonymous',
-      avatar: avatar || existing?.avatar || '',
-      cursor: cursor || existing?.cursor,
-      selection: selection || existing?.selection,
-      lastSeen: Date.now(),
-    });
+    
+    // Se esiste già, aggiorna solo i campi forniti, altrimenti crea nuovo
+    if (existing) {
+      // Aggiorna solo i campi forniti, mantieni gli altri
+      pagePresence.set(userId, {
+        userId: existing.userId,
+        name: name || existing.name,
+        avatar: avatar || existing.avatar,
+        cursor: cursor !== undefined ? cursor : existing.cursor,
+        selection: selection !== undefined ? selection : existing.selection,
+        lastSeen: Date.now(),
+      });
+    } else {
+      // Crea nuovo utente solo se abbiamo almeno name e avatar
+      if (name && avatar) {
+        pagePresence.set(userId, {
+          userId,
+          name,
+          avatar,
+          cursor,
+          selection,
+          lastSeen: Date.now(),
+        });
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
