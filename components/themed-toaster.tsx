@@ -9,6 +9,17 @@ export function ThemedToaster() {
   return (
     <Toaster 
       theme={theme as 'light' | 'dark' | 'system'}
+      position="bottom-center"
+      richColors
+      closeButton
+      toastOptions={{
+        style: {
+          background: 'hsl(var(--card))',
+          border: '2px solid hsl(var(--primary))',
+          color: 'hsl(var(--foreground))',
+        },
+        className: 'toast-custom',
+      }}
     />
   );
 }

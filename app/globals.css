@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  /* Safe area insets per iOS Dynamic Island e notch */
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  }
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
@@ -71,5 +78,40 @@
   .animation-delay-4000 {
     animation-delay: 4s;
   }
+  
+  /* Safe area utilities per iOS */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Min height che include le safe areas */
+  .min-h-screen-safe {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height per mobile */
+  }
+}
+
+/* Stili personalizzati per i toast Sonner */
+[data-sonner-toaster] {
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+[data-sonner-toast] {
+  border: 2px solid hsl(var(--primary)) !important;
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  min-width: 200px !important;
 }
 

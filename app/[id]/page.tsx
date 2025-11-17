@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Copy, Share2 } from "lucide-react";
+import { Check, Loader2, Copy, Share2, Save } from "lucide-react";
+import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";
@@ -26,6 +27,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { EditorToolbar } from '@/components/editor-toolbar';
 import { useTheme } from '@/components/theme-provider';
+import { useRealtimeSync } from '@/lib/use-realtime-sync';
 import './editor.css';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
@@ -168,6 +170,8 @@ export default function PublicPageEditor() {
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const lastSavedContentRef = useRef<string>("");
+  const isLocalChangeRef = useRef(false);
+  const lastSyncTimeRef = useRef<string>("");
 
   // Carica il contenuto della pagina
   useEffect(() => {
@@ -262,7 +266,10 @@ export default function PublicPageEditor() {
     
     // Salva solo se il contenuto è cambiato
     if (contentToSave === lastSavedContentRef.current) return;
-    if (!contentDocs.trim() && !contentCode.trim()) return;
+    
+    // Non salvare se entrambi i contenuti sono vuoti (ma permettere salvataggio di contenuto vuoto se c'era prima)
+    const isEmpty = !contentDocs.replace(/<p><\/p>/g, '').replace(/<p>\s*<\/p>/g, '').trim() && !contentCode.trim();
+    if (isEmpty && !pageExists) return;
     
     setIsSaving(true);
     setSaved(false);
@@ -281,9 +288,25 @@ export default function PublicPageEditor() {
         setSaved(true);
         setPageExists(true);
         setTimeout(() => setSaved(false), 2000);
+        
+        // Mostra notifica di salvataggio automatico
+        toast.success('Salvato automaticamente', {
+          icon: <Save className="h-4 w-4" />,
+          duration: 3000,
+        });
+      } else {
+        // Se la risposta non è ok, mostra errore
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Errore salvataggio:', errorData);
+        toast.error('Errore durante il salvataggio', {
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error('Errore salvataggio:', error);
+      toast.error('Errore durante il salvataggio', {
+        duration: 3000,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -293,14 +316,26 @@ export default function PublicPageEditor() {
   useEffect(() => {
     const contentToSave = JSON.stringify({ docs: contentDocs, code: contentCode });
     if (isSaving || contentToSave === lastSavedContentRef.current) return;
-    if (!contentDocs.trim() && !contentCode.trim()) return;
+    
+    // Non salvare se entrambi i contenuti sono vuoti su una pagina nuova
+    const isEmpty = !contentDocs.replace(/<p><\/p>/g, '').replace(/<p>\s*<\/p>/g, '').trim() && !contentCode.trim();
+    if (isEmpty && !pageExists) return;
+    
+    isLocalChangeRef.current = true;
     
     const timer = setTimeout(() => {
-      handleSave();
+      handleSave().catch((error) => {
+        // Silenzia gli errori di database durante lo sviluppo
+        console.warn('Salvataggio automatico fallito (database non configurato?):', error);
+      });
+      // Reset dopo il salvataggio
+      setTimeout(() => {
+        isLocalChangeRef.current = false;
+      }, 1000);
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [contentDocs, contentCode, isSaving, handleSave]);
+  }, [contentDocs, contentCode, isSaving, handleSave, pageExists]);
 
   // TipTap editor per modalità docs
   const editor = useEditor({
@@ -324,6 +359,43 @@ export default function PublicPageEditor() {
       editor.commands.setContent(contentDocs || '<p></p>');
     }
   }, [editor, isLoading, contentDocs]);
+
+  // Sincronizzazione in tempo reale
+  const handleRemoteUpdate = useCallback((content: string, updatedAt: string) => {
+    // Evita aggiornamenti se l'utente sta modificando localmente o se è lo stesso aggiornamento
+    if (isLocalChangeRef.current || updatedAt === lastSyncTimeRef.current) {
+      return;
+    }
+
+    lastSyncTimeRef.current = updatedAt;
+
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.docs !== undefined && parsed.code !== undefined) {
+        // Aggiorna solo se il contenuto è diverso
+        const currentContent = JSON.stringify({ docs: contentDocs, code: contentCode });
+        if (content !== currentContent) {
+          setContentDocs(parsed.docs || '<p></p>');
+          setContentCode(parsed.code || '');
+          lastSavedContentRef.current = content;
+          
+          // Aggiorna anche l'editor TipTap se è in modalità docs
+          if (editor && editorMode === 'docs') {
+            editor.commands.setContent(parsed.docs || '<p></p>');
+          }
+        }
+      }
+    } catch {
+      // Se non è JSON, ignora
+    }
+  }, [contentDocs, contentCode, editor, editorMode]);
+
+  // Attiva sincronizzazione solo dopo il caricamento iniziale
+  useRealtimeSync({
+    pageId,
+    onUpdate: handleRemoteUpdate,
+    enabled: !isLoading && pageExists,
+  });
 
   // Funzione per verificare se c'è contenuto nell'editor
   const hasContent = (mode: 'code' | 'docs') => {

@@ -87,21 +87,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const page = await prisma.publicPage.upsert({
-      where: { id },
-      update: { content },
-      create: { id, content },
-    });
+    try {
+      const page = await prisma.publicPage.upsert({
+        where: { id },
+        update: { content },
+        create: { id, content },
+      });
 
-    return NextResponse.json({
-      success: true,
-      id: page.id,
-      updatedAt: page.updatedAt
-    });
-  } catch (error) {
-    console.error('Errore salvataggio pagina:', error);
+      // Invia evento di aggiornamento (per future implementazioni con broadcasting)
+      // Per ora il polling SSE gestirà la sincronizzazione
+
+      return NextResponse.json({
+        success: true,
+        id: page.id,
+        updatedAt: page.updatedAt
+      });
+    } catch (dbError: any) {
+      // Se c'è un errore di database, logga e ritorna errore più dettagliato
+      console.error('Errore database durante salvataggio:', dbError);
+      
+      // Se è un errore di connessione o constraint, ritorna errore specifico
+      if (dbError.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'ID già esistente' },
+          { status: 409 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: 'Errore nel salvataggio della pagina', details: dbError.message },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    console.error('Errore generico salvataggio pagina:', error);
     return NextResponse.json(
-      { error: 'Errore nel salvataggio della pagina' },
+      { error: 'Errore nel salvataggio della pagina', details: error.message },
       { status: 500 }
     );
   }

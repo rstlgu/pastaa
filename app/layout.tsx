@@ -29,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" suppressHydrationWarning>
-      <body className={`${inter.className} ${righteous.variable}`}>
+    <html lang="it" suppressHydrationWarning className="h-full">
+      <body className={`${inter.className} ${righteous.variable} h-full`}>
         <ThemeProvider defaultTheme="dark" storageKey="pasta-theme">
           <LanguageProvider>
             {children}
