@@ -59,6 +59,28 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        ripple: {
+          "0%, 100%": {
+            transform: "scale(1)",
+          },
+          "50%": {
+            transform: "scale(0.9)",
+          },
+        },
+        aurora: {
+          from: {
+            backgroundPosition: "50% 50%, 50% 50%",
+          },
+          to: {
+            backgroundPosition: "350% 50%, 350% 50%",
+          },
+        },
+      },
+      animation: {
+        ripple: "ripple 3s ease-in-out infinite",
+        aurora: "aurora 60s linear infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

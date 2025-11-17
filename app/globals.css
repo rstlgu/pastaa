@@ -24,6 +24,9 @@
     --input: 0 0% 90%;
     --ring: 45 100% 50%;
     --radius: 0.5rem;
+    --primary-light: 45 100% 70%;
+    --primary-dark: 45 100% 30%;
+    --transparent: transparent;
   }
 
   .dark {
@@ -46,6 +49,9 @@
     --border: 45 100% 50%;
     --input: 0 0% 10%;
     --ring: 45 100% 50%;
+    --primary-light: 45 100% 70%;
+    --primary-dark: 45 100% 30%;
+    --transparent: transparent;
   }
 }
 
@@ -55,6 +61,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
 }
 

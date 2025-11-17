@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
-import { Github, Check, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Github, Check, Loader2, Copy, Share2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { E2EBadge } from "@/components/e2e-badge";
 import { GitHubBadge } from "@/components/github-badge";
@@ -26,6 +26,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { EditorToolbar } from '@/components/editor-toolbar';
+import { useTheme } from '@/components/theme-provider';
 import { toast } from 'sonner';
 import './editor.css';
 import { javascript } from '@codemirror/lang-javascript';
@@ -150,6 +151,7 @@ function detectLanguage(content: string): string {
 
 export default function PublicPageEditor() {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const params = useParams();
   const pageId = params.id as string;
   
@@ -166,6 +168,8 @@ export default function PublicPageEditor() {
   const [detectedLanguage, setDetectedLanguage] = useState<string>('auto');
   const [showModeChangeDialog, setShowModeChangeDialog] = useState(false);
   const [pendingMode, setPendingMode] = useState<'code' | 'docs' | null>(null);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const lastSavedContentRef = useRef<string>("");
 
   // Carica il contenuto della pagina
@@ -176,23 +180,44 @@ export default function PublicPageEditor() {
         const data = await response.json();
         
         if (data.content) {
+          let loadedDocs = '<p></p>';
+          let loadedCode = '';
+          
           // Prova a parsare come JSON per vedere se ha contenuti separati
           try {
             const parsed = JSON.parse(data.content);
             if (parsed.docs !== undefined && parsed.code !== undefined) {
-              setContentDocs(parsed.docs || '<p></p>');
-              setContentCode(parsed.code || '');
+              loadedDocs = parsed.docs || '<p></p>';
+              loadedCode = parsed.code || '';
               lastSavedContentRef.current = data.content;
             } else {
               // Vecchio formato - usa come code
-              setContentCode(data.content);
+              loadedCode = data.content;
               lastSavedContentRef.current = data.content;
             }
           } catch {
             // Non è JSON, è testo semplice - usa come code
-            setContentCode(data.content);
+            loadedCode = data.content;
             lastSavedContentRef.current = data.content;
           }
+          
+          setContentDocs(loadedDocs);
+          setContentCode(loadedCode);
+          
+          // Determina automaticamente la modalità in base al contenuto
+          const hasCodeContent = loadedCode.trim().length > 0;
+          const hasDocsContent = loadedDocs.replace(/<p><\/p>/g, '').replace(/<p>\s*<\/p>/g, '').trim().length > 0;
+          
+          if (hasCodeContent && !hasDocsContent) {
+            setEditorMode('code');
+          } else if (hasDocsContent && !hasCodeContent) {
+            setEditorMode('docs');
+          } else if (hasCodeContent && hasDocsContent) {
+            // Se entrambi hanno contenuto, usa code (ma potremmo usare l'ultimo modificato)
+            setEditorMode('code');
+          }
+          // Altrimenti rimane 'code' (default)
+          
           setPageExists(data.exists);
           if (data.updatedAt) {
             setLastSaved(new Date(data.updatedAt));
@@ -330,17 +355,39 @@ export default function PublicPageEditor() {
     setShowModeChangeDialog(false);
   };
 
+  // Apri il bottom sheet per condividere
+  const openShareSheet = () => {
+    setShowShareSheet(true);
+  };
+
   // Copia l'URL completo nella clipboard
-  const copyPageId = async () => {
+  const copyFullUrl = async () => {
     try {
       const fullUrl = `${window.location.origin}/${pageId}`;
       await navigator.clipboard.writeText(fullUrl);
-      toast(t('linkCopied'), {
-        duration: 2000,
-        position: 'bottom-right',
-      });
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     } catch (error) {
       console.error('Errore copia:', error);
+    }
+  };
+
+  // Condividi link usando native share API
+  const shareLink = async () => {
+    const fullUrl = `${window.location.origin}/${pageId}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${t('appName')} - ${pageId}`,
+          url: fullUrl,
+        });
+      } catch (error) {
+        console.log('Share cancelled or failed:', error);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      copyFullUrl();
     }
   };
 
@@ -386,10 +433,16 @@ export default function PublicPageEditor() {
               <div className="h-6 w-px bg-border" />
               <div className="flex items-center gap-2">
                 <button
-                  onClick={copyPageId}
-                  className="px-3 py-1 bg-muted rounded-lg text-sm font-mono border-2 border-primary/30 hover:bg-muted/80 transition-colors cursor-pointer"
+                  onClick={openShareSheet}
+                  className={`px-3 py-1 bg-muted rounded-lg font-mono border-2 border-primary/30 hover:bg-muted/80 transition-colors cursor-pointer ${
+                    pageId.length <= 8 
+                      ? 'text-sm' 
+                      : pageId.length <= 13 
+                        ? 'text-xs' 
+                        : 'text-[11px]'
+                  }`}
                 >
-                  /{pageId}
+                  /{pageId.length > 13 ? `${pageId.slice(0, 13)}...` : pageId}
                 </button>
                 {!pageExists && (
                   <span className="text-xs text-muted-foreground hidden md:inline">
@@ -468,12 +521,12 @@ export default function PublicPageEditor() {
                   />
                 </div>
               ) : (
-                <div className="h-full bg-black">
+                <div className="h-full" style={{ backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5' }}>
                   <CodeMirror
                     value={contentCode || ''}
                     height="100%"
                     onChange={(value) => setContentCode(value)}
-                    theme="dark"
+                    theme={theme === 'dark' ? 'dark' : 'light'}
                     extensions={
                       codeLanguage !== 'auto' 
                         ? [getLanguageExtension(codeLanguage)] 
@@ -489,7 +542,7 @@ export default function PublicPageEditor() {
                       autocompletion: true,
                     }}
                     style={{
-                      backgroundColor: '#000000',
+                      backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5',
                       minHeight: '100%',
                     }}
                   />
@@ -523,6 +576,115 @@ export default function PublicPageEditor() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Share Dialog - Desktop Only */}
+        {typeof window !== 'undefined' && window.innerWidth >= 768 && (
+          <AlertDialog open={showShareSheet} onOpenChange={setShowShareSheet}>
+            <AlertDialogContent className="max-w-md">
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('shareLink')}</AlertDialogTitle>
+              </AlertDialogHeader>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-2 bg-muted rounded-lg p-3 border-2">
+                  <p className="flex-1 font-mono text-xs break-all leading-relaxed max-w-[350px]">
+                    {typeof window !== 'undefined' && `${window.location.origin}/${pageId}`}
+                  </p>
+                  <button
+                    onClick={copyFullUrl}
+                    className="flex-shrink-0 hover:bg-primary/10 h-8 w-8 rounded-md flex items-center justify-center transition-colors"
+                  >
+                    {linkCopied ? (
+                      <Check className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={shareLink}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  {t('shareLink')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        {/* Share Bottom Sheet - Mobile Only */}
+        <AnimatePresence>
+          {showShareSheet && typeof window !== 'undefined' && window.innerWidth < 768 && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowShareSheet(false)}
+                className="fixed inset-0 bg-black/50 z-50"
+              />
+
+              {/* Bottom Sheet */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="fixed bottom-0 left-0 right-0 bg-background border-t-2 border-primary rounded-t-3xl z-50 max-h-[80vh] overflow-y-auto"
+              >
+                <div className="p-6 space-y-6">
+                  {/* Handle Bar */}
+                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto" />
+
+                  {/* Header */}
+                  <div className="text-center">
+                    <h2 className="text-xl font-bold">{t('shareLink')}</h2>
+                  </div>
+
+                  {/* Link Display */}
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 bg-muted rounded-lg p-4 border-2">
+                      <p className="flex-1 font-mono text-sm break-all leading-relaxed">
+                        {typeof window !== 'undefined' && `${window.location.origin}/${pageId}`}
+                      </p>
+                      <button
+                        onClick={copyFullUrl}
+                        className="flex-shrink-0 hover:bg-primary/10 h-10 w-10 rounded-md flex items-center justify-center transition-colors"
+                      >
+                        {linkCopied ? (
+                          <Check className="h-5 w-5 text-primary" />
+                        ) : (
+                          <Copy className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-3">
+                      <button
+                        onClick={shareLink}
+                        className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg border-2 border-primary flex items-center justify-center gap-2 font-medium transition-colors"
+                      >
+                        <Share2 className="h-5 w-5" />
+                        {t('shareLink')}
+                      </button>
+                      
+                      <button
+                        onClick={() => setShowShareSheet(false)}
+                        className="w-full h-12 border-2 border-border rounded-lg hover:bg-muted transition-colors font-medium"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </TooltipProvider>
   );

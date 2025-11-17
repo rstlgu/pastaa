@@ -11,13 +11,27 @@ export function E2EBadge() {
   const [showE2EInfo, setShowE2EInfo] = useState(false);
   const [showDesktopCard, setShowDesktopCard] = useState(false);
 
+  const handleClick = () => {
+    // Solo su mobile apri il bottom sheet
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setShowE2EInfo(true);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    // Solo su desktop mostra hover card
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setShowDesktopCard(true);
+    }
+  };
+
   return (
     <div className="relative">
       <motion.button
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        onClick={() => setShowE2EInfo(true)}
-        onMouseEnter={() => setShowDesktopCard(true)}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setShowDesktopCard(false)}
         className="inline-flex items-center justify-center rounded-full border-2 border-green-500 bg-green-500/20 hover:bg-green-500/30 h-10 w-10 transition-colors"
       >
@@ -100,7 +114,7 @@ export function E2EBadge() {
 
       {/* E2E Info Bottom Sheet - Mobile Only */}
       <AnimatePresence>
-        {showE2EInfo && (
+        {showE2EInfo && typeof window !== 'undefined' && window.innerWidth < 768 && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -108,7 +122,7 @@ export function E2EBadge() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowE2EInfo(false)}
-              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
             />
 
             {/* Bottom Sheet */}
@@ -117,7 +131,7 @@ export function E2EBadge() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="md:hidden fixed inset-x-0 bottom-0 z-[101] bg-card border-t-2 border-green-500 rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
+              className="fixed inset-x-0 bottom-0 z-[101] bg-card border-t-2 border-green-500 rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
             >
               <div className="p-6 pb-8">
                 {/* Handle Bar */}

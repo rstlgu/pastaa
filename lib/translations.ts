@@ -112,6 +112,14 @@ export const translations = {
     // Public Page
     publicPageWarning: 'Pagina pubblica: chiunque conosce l\'URL può visualizzare e modificare questo contenuto',
     linkCopied: 'Link copiato',
+    
+    // Homepage
+    heroTitle: 'Condivisione Testo Sicura',
+    heroSubtitle: 'Un editor di codice online e un sistema di condivisione testo con crittografia end-to-end',
+    sendButton: 'Send',
+    shareButton: 'Share',
+    sendDescription: 'Crittografia end-to-end, nessun server può leggere il tuo contenuto',
+    shareDescription: 'Editor collaborativo per codice e documenti in tempo reale',
   },
   en: {
     // Common
@@ -224,6 +232,14 @@ export const translations = {
     // Public Page
     publicPageWarning: 'Public page: anyone with the URL can view and edit this content',
     linkCopied: 'Link copied',
+    
+    // Homepage
+    heroTitle: 'Secure Text Sharing',
+    heroSubtitle: 'An online code editor and end-to-end encrypted text sharing system',
+    sendButton: 'Send',
+    shareButton: 'Share',
+    sendDescription: 'End-to-end encryption, no server can read your content',
+    shareDescription: 'Collaborative editor for code and documents in real-time',
   }
 };
 
