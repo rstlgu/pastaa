@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Send, Share2, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock } from "lucide-react";
+import { Send, Share2, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock, Coffee, Mail } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
@@ -125,7 +125,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="flex flex-wrap justify-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground mt-4 md:mt-12"
+              className="flex flex-wrap justify-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground mt-2 md:mt-12"
             >
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-primary" />
@@ -173,11 +173,51 @@ export default function Home() {
         </div>
       </AuroraBackground>
 
+      {/* Created by section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        className="border-t border-primary/20 py-6 bg-card/50"
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Created by{' '}
+              <Link 
+                href="https://rstlgu.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                rstlgu
+              </Link>
+              . For help and support shoot me an{' '}
+              <Link 
+                href="mailto:support@pastaa.io"
+                className="text-primary hover:text-primary/80 transition-colors font-medium inline-flex items-center gap-1"
+              >
+                <Mail className="h-3 w-3" />
+                email
+              </Link>
+              .
+            </p>
+            <Link 
+              href="/donate"
+              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+            >
+              <Coffee className="h-4 w-4" />
+              Support me with a coffee
+            </Link>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Footer */}
       <motion.footer
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
+        transition={{ delay: 0.8 }}
         className="border-t border-primary/20 py-6"
       >
         <div className="container mx-auto px-4">
