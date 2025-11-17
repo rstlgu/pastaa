@@ -27,7 +27,6 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { EditorToolbar } from '@/components/editor-toolbar';
 import { useTheme } from '@/components/theme-provider';
-import { toast } from 'sonner';
 import './editor.css';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';

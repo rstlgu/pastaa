@@ -1,10 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Send, Share2, Github, Lock, Code, FileText } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { E2EBadge } from "@/components/e2e-badge";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import { GitHubBadge } from "@/components/github-badge";
