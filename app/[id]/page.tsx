@@ -310,7 +310,7 @@ export default function PublicPageEditor() {
     } finally {
       setIsSaving(false);
     }
-  }, [contentDocs, contentCode, pageId]);
+  }, [contentDocs, contentCode, pageId, pageExists]);
 
   // Auto-save ogni 3 secondi dopo modifiche
   useEffect(() => {

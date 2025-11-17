@@ -102,27 +102,29 @@ export async function POST(request: NextRequest) {
         id: page.id,
         updatedAt: page.updatedAt
       });
-    } catch (dbError: any) {
+    } catch (dbError) {
       // Se c'è un errore di database, logga e ritorna errore più dettagliato
       console.error('Errore database durante salvataggio:', dbError);
       
       // Se è un errore di connessione o constraint, ritorna errore specifico
-      if (dbError.code === 'P2002') {
+      if (dbError && typeof dbError === 'object' && 'code' in dbError && dbError.code === 'P2002') {
         return NextResponse.json(
           { error: 'ID già esistente' },
           { status: 409 }
         );
       }
       
+      const errorMessage = dbError instanceof Error ? dbError.message : 'Errore sconosciuto';
       return NextResponse.json(
-        { error: 'Errore nel salvataggio della pagina', details: dbError.message },
+        { error: 'Errore nel salvataggio della pagina', details: errorMessage },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Errore generico salvataggio pagina:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
     return NextResponse.json(
-      { error: 'Errore nel salvataggio della pagina', details: error.message },
+      { error: 'Errore nel salvataggio della pagina', details: errorMessage },
       { status: 500 }
     );
   }
