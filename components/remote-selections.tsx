@@ -96,7 +96,9 @@ export function RemoteSelections({ users, editorMode, content }: RemoteSelection
     });
 
     return () => {
-      selectionTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      // Copia il valore corrente per evitare warning di React hooks
+      const timeouts = new Map(selectionTimeoutsRef.current);
+      timeouts.forEach((timeout) => clearTimeout(timeout));
       selectionTimeoutsRef.current.clear();
       document.querySelectorAll('.remote-selection-highlight').forEach((el) => {
         el.remove();

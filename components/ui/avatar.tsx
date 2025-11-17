@@ -43,10 +43,11 @@ Avatar.displayName = "Avatar";
 const AvatarImage = React.forwardRef<
   HTMLImageElement,
   React.ImgHTMLAttributes<HTMLImageElement>
->(({ className, ...props }, ref) => {
+>(({ className, alt = "", ...props }, ref) => {
   return (
     <img
       ref={ref}
+      alt={alt}
       className={cn("aspect-square h-full w-full object-cover", className)}
       {...props}
     />
@@ -58,13 +59,16 @@ const AvatarFallback = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, style, ...props }, ref) => {
+  // Se style contiene backgroundColor o color, rimuovi le classi di default
+  const hasCustomStyle = style && (style.backgroundColor || style.color);
+  const defaultClasses = hasCustomStyle
+    ? "flex h-full w-full items-center justify-center font-medium text-sm"
+    : "flex h-full w-full items-center justify-center bg-primary/20 text-primary font-medium text-sm";
+  
   return (
     <div
       ref={ref}
-      className={cn(
-        "flex h-full w-full items-center justify-center bg-primary/20 text-primary font-medium text-sm",
-        className
-      )}
+      className={cn(defaultClasses, className)}
       style={style}
       {...props}
     />

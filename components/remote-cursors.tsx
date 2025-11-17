@@ -74,7 +74,6 @@ export function RemoteCursors({ users }: RemoteCursorsProps) {
               <Avatar className="h-6 w-6 border-2" style={{ borderColor: userColor }}>
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback 
-                  className="!bg-transparent !text-white font-bold"
                   style={{ backgroundColor: userColor, color: '#fff' }}
                 >
                   {user.name.charAt(0).toUpperCase()}
