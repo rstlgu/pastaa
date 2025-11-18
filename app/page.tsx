@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Send, Share2, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock, Coffee, Mail } from "lucide-react";
+import { Send, Share2, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
@@ -173,8 +173,8 @@ export default function Home() {
         </div>
       </AuroraBackground>
 
-      {/* Created by section */}
-      <motion.section
+      {/* Created by section - Hidden for now */}
+      {/* <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
@@ -211,7 +211,7 @@ export default function Home() {
             </Link>
           </div>
         </div>
-      </motion.section>
+      </motion.section> */}
 
       {/* Footer */}
       <motion.footer
