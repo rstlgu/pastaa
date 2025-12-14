@@ -50,6 +50,44 @@ function ChatRoomContent() {
   const [showMembers, setShowMembers] = useState(false);
   const [copied, setCopied] = useState(false);
   const [channelHash, setChannelHash] = useState("");
+  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+
+  // Generate consistent color from username (Telegram-style)
+  const getUserColor = useCallback((name: string): string => {
+    const colors = [
+      "bg-red-500",
+      "bg-orange-500",
+      "bg-amber-500",
+      "bg-yellow-500",
+      "bg-lime-500",
+      "bg-green-500",
+      "bg-emerald-500",
+      "bg-teal-500",
+      "bg-cyan-500",
+      "bg-sky-500",
+      "bg-blue-500",
+      "bg-indigo-500",
+      "bg-violet-500",
+      "bg-purple-500",
+      "bg-fuchsia-500",
+      "bg-pink-500",
+      "bg-rose-500",
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  }, []);
+
+  // Get initials from username
+  const getInitials = useCallback((name: string): string => {
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }, []);
 
   const pusherRef = useRef<Pusher | null>(null);
   const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
@@ -502,22 +540,52 @@ function ChatRoomContent() {
                       {msg.content}
                     </div>
                   ) : (
-                    <div
-                      className={`max-w-[80%] md:max-w-[60%] ${
-                        msg.from === myIdRef.current
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border-2 border-primary/30"
-                      } rounded-2xl px-4 py-3`}
+                    <div 
+                      className={`flex items-end gap-2 max-w-[85%] md:max-w-[70%] ${
+                        msg.from === myIdRef.current ? "flex-row-reverse" : ""
+                      }`}
+                      onClick={() => setExpandedMessageId(expandedMessageId === msg.id ? null : msg.id)}
                     >
+                      {/* Avatar */}
                       {msg.from !== myIdRef.current && (
-                        <p className="text-xs font-medium text-primary mb-1">{msg.fromUsername}</p>
+                        <div 
+                          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${getUserColor(msg.fromUsername)}`}
+                        >
+                          {getInitials(msg.fromUsername)}
+                        </div>
                       )}
-                      <p className="break-words">{msg.content}</p>
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        {msg.encrypted && <Lock className="h-3 w-3 opacity-50" />}
-                        <span className="text-[10px] opacity-50">
-                          {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
+                      
+                      {/* Message bubble */}
+                      <div
+                        className={`relative ${
+                          msg.from === myIdRef.current
+                            ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
+                            : "bg-card border-2 border-primary/20 rounded-2xl rounded-bl-md"
+                        } px-3 py-2 cursor-pointer active:opacity-80 transition-opacity`}
+                      >
+                        {msg.from !== myIdRef.current && (
+                          <p className={`text-xs font-semibold mb-0.5 ${getUserColor(msg.fromUsername).replace('bg-', 'text-')}`}>
+                            {msg.fromUsername}
+                          </p>
+                        )}
+                        <p className="break-words text-sm">{msg.content}</p>
+                        
+                        {/* Time - shown on tap */}
+                        <AnimatePresence>
+                          {expandedMessageId === msg.id && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="flex items-center justify-end gap-1 mt-1 overflow-hidden"
+                            >
+                              {msg.encrypted && <Lock className="h-3 w-3 opacity-50" />}
+                              <span className="text-[10px] opacity-60">
+                                {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                   )}
