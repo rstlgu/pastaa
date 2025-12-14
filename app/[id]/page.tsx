@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Copy, Share2, Users, X } from "lucide-react";
+import { Check, Loader2, Copy, Share2, Users, X, Clock } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";
@@ -177,6 +177,8 @@ export default function PublicPageEditor() {
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [showUsersSheet, setShowUsersSheet] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<number>(24 * 60 * 60 * 1000); // Default 24h in ms
   const lastSavedContentRef = useRef<string>("");
   const isLocalChangeRef = useRef(false);
   const lastSyncTimeRef = useRef<string>("");
@@ -251,6 +253,9 @@ export default function PublicPageEditor() {
           if (data.updatedAt) {
             setLastSaved(new Date(data.updatedAt));
           }
+          if (data.expiresAt) {
+            setExpiresAt(new Date(data.expiresAt));
+          }
         } else {
           // Nessun contenuto, pagina nuova
           setPageExists(data.exists || false);
@@ -289,13 +294,21 @@ export default function PublicPageEditor() {
       const response = await fetch('/api/public-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: pageId, content: contentToSave }),
+        body: JSON.stringify({ 
+          id: pageId, 
+          content: contentToSave,
+          // Invia expiresIn solo quando la pagina è nuova
+          ...(!pageExists ? { expiresIn: selectedDuration } : {}),
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         lastSavedContentRef.current = contentToSave;
         setLastSaved(new Date(data.updatedAt));
+        if (data.expiresAt) {
+          setExpiresAt(new Date(data.expiresAt));
+        }
         setSaved(true);
         setSaveError(false);
         setPageExists(true);
@@ -319,7 +332,7 @@ export default function PublicPageEditor() {
     } finally {
       setIsSaving(false);
     }
-  }, [contentDocs, contentCode, pageId, pageExists]);
+  }, [contentDocs, contentCode, pageId, pageExists, selectedDuration]);
 
   // Auto-save ogni 3 secondi dopo modifiche
   useEffect(() => {
@@ -860,6 +873,62 @@ export default function PublicPageEditor() {
                     )}
                   </button>
                 </div>
+
+                {/* Duration Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{t('contentDuration')}</span>
+                  </div>
+                  
+                  {expiresAt ? (
+                    <div className="bg-muted/50 rounded-lg p-3 border">
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">{t('expiresIn')}: </span>
+                        <span className="font-medium">
+                          {(() => {
+                            const diff = expiresAt.getTime() - Date.now();
+                            if (diff <= 0) return t('expired');
+                            const hours = Math.floor(diff / (1000 * 60 * 60));
+                            const days = Math.floor(hours / 24);
+                            if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')}`;
+                            if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
+                            const minutes = Math.floor(diff / (1000 * 60));
+                            return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
+                          })()}
+                        </span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: t('duration1Hour'), value: 1 * 60 * 60 * 1000 },
+                        { label: t('duration6Hours'), value: 6 * 60 * 60 * 1000 },
+                        { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
+                        { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
+                        { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setSelectedDuration(option.value)}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                            selectedDuration === option.value
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted hover:bg-muted/80 text-foreground'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {!expiresAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('contentDurationDescription')}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <AlertDialogFooter>
@@ -926,6 +995,61 @@ export default function PublicPageEditor() {
                           <Copy className="h-5 w-5" />
                         )}
                       </button>
+                    </div>
+
+                    {/* Duration Selection - Mobile */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>{t('contentDuration')}</span>
+                      </div>
+                      
+                      {expiresAt ? (
+                        <div className="bg-muted/50 rounded-lg p-3 border">
+                          <p className="text-sm">
+                            <span className="text-muted-foreground">{t('expiresIn')}: </span>
+                            <span className="font-medium">
+                              {(() => {
+                                const diff = expiresAt.getTime() - Date.now();
+                                if (diff <= 0) return t('expired');
+                                const hours = Math.floor(diff / (1000 * 60 * 60));
+                                const days = Math.floor(hours / 24);
+                                if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')}`;
+                                if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
+                                const minutes = Math.floor(diff / (1000 * 60));
+                                return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
+                              })()}
+                            </span>
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { label: t('duration1Hour'), value: 1 * 60 * 60 * 1000 },
+                              { label: t('duration6Hours'), value: 6 * 60 * 60 * 1000 },
+                              { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
+                              { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
+                              { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
+                            ].map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => setSelectedDuration(option.value)}
+                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                  selectedDuration === option.value
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted hover:bg-muted/80 text-foreground'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('contentDurationDescription')}
+                          </p>
+                        </>
+                      )}
                     </div>
 
                     {/* Action Buttons */}

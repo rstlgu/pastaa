@@ -22,9 +22,10 @@ model Paste {
 }
 
 model PublicPage {
-  id        String   @id @unique
-  content   String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @unique
+  content   String    @default("")
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 

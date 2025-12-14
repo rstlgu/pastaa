@@ -114,6 +114,24 @@ export const translations = {
     publicPageWarning: 'Pagina pubblica: chiunque conosce l\'URL può visualizzare e modificare questo contenuto',
     linkCopied: 'Link copiato',
     
+    // Content Duration
+    contentDuration: 'Durata contenuto',
+    contentDurationDescription: 'Il contenuto verrà distrutto dopo questo periodo',
+    duration1Hour: '1 ora',
+    duration6Hours: '6 ore',
+    duration24Hours: '24 ore',
+    duration7Days: '7 giorni',
+    duration30Days: '30 giorni',
+    expiresIn: 'Scade tra',
+    expired: 'Scaduto',
+    day: 'giorno',
+    days: 'giorni',
+    hour: 'ora',
+    hours: 'ore',
+    minute: 'minuto',
+    minutes: 'minuti',
+    shareDescription: 'Condividi il link con chi vuoi',
+    
     // Homepage
     heroTitle: 'Condivisione Testo Sicura',
     heroSubtitle: 'Condividi testo e codice in modo sicuro e invia messaggi cifrati con un editor open source',
@@ -240,6 +258,24 @@ export const translations = {
     // Public Page
     publicPageWarning: 'Public page: anyone with the URL can view and edit this content',
     linkCopied: 'Link copied',
+    
+    // Content Duration
+    contentDuration: 'Content Duration',
+    contentDurationDescription: 'Content will be destroyed after this period',
+    duration1Hour: '1 hour',
+    duration6Hours: '6 hours',
+    duration24Hours: '24 hours',
+    duration7Days: '7 days',
+    duration30Days: '30 days',
+    expiresIn: 'Expires in',
+    expired: 'Expired',
+    day: 'day',
+    days: 'days',
+    hour: 'hour',
+    hours: 'hours',
+    minute: 'minute',
+    minutes: 'minutes',
+    shareDescription: 'Share the link with anyone',
     
     // Homepage
     heroTitle: 'Secure Text Sharing',

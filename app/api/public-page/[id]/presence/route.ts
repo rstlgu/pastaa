@@ -12,18 +12,29 @@ const presenceStore = new Map<string, Map<string, {
 
 const PRESENCE_TIMEOUT = 10000; // Rimuovi utenti dopo 10 secondi di inattività (aumentato per evitare flickering)
 
-// POST - Aggiorna presenza utente
+// POST - Aggiorna presenza utente o rimuovi (con action=leave)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const pageId = params.id;
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+    
     const body = await request.json();
     const { userId, name, avatar, cursor, selection } = body;
 
     if (!pageId || !userId) {
       return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 });
+    }
+
+    // Se l'azione è "leave", rimuovi l'utente
+    if (action === 'leave') {
+      if (presenceStore.has(pageId)) {
+        presenceStore.get(pageId)!.delete(userId);
+      }
+      return NextResponse.json({ success: true });
     }
 
     // Inizializza store per questa pagina se non esiste

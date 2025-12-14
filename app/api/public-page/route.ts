@@ -38,11 +38,29 @@ export async function GET(request: NextRequest) {
         });
       }
 
+      // Controlla se la pagina è scaduta
+      if (page.expiresAt && new Date(page.expiresAt) < new Date()) {
+        // Elimina la pagina scaduta
+        await prisma.publicPage.delete({
+          where: { id },
+        }).catch(() => {
+          // Ignora errori di eliminazione
+        });
+        
+        return NextResponse.json({ 
+          id, 
+          content: '', 
+          exists: false,
+          expired: true
+        });
+      }
+
       return NextResponse.json({ 
         id: page.id, 
         content: page.content,
         exists: true,
-        updatedAt: page.updatedAt
+        updatedAt: page.updatedAt,
+        expiresAt: page.expiresAt
       });
     } catch (dbError) {
       // Se c'è un errore di database, ritorna pagina vuota invece di errore 500
@@ -69,7 +87,7 @@ export async function GET(request: NextRequest) {
 // POST - Crea o aggiorna una pagina pubblica
 export async function POST(request: NextRequest) {
   try {
-    const { id, content } = await request.json();
+    const { id, content, expiresIn } = await request.json();
 
     if (!id || typeof content !== 'string') {
       return NextResponse.json(
@@ -87,11 +105,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calcola la data di scadenza se fornita
+    let expiresAt: Date | null = null;
+    if (expiresIn && typeof expiresIn === 'number' && expiresIn > 0) {
+      expiresAt = new Date(Date.now() + expiresIn);
+    }
+
     try {
+      // Prima controlla se la pagina esiste già
+      const existingPage = await prisma.publicPage.findUnique({
+        where: { id },
+      });
+
       const page = await prisma.publicPage.upsert({
         where: { id },
-        update: { content },
-        create: { id, content },
+        update: { 
+          content,
+          // Aggiorna expiresAt solo se è la prima volta che viene impostato o se viene fornito
+          ...(expiresAt !== null && !existingPage?.expiresAt ? { expiresAt } : {}),
+        },
+        create: { 
+          id, 
+          content,
+          expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24h
+        },
       });
 
       // Invia evento di aggiornamento (per future implementazioni con broadcasting)
@@ -100,7 +137,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         id: page.id,
-        updatedAt: page.updatedAt
+        updatedAt: page.updatedAt,
+        expiresAt: page.expiresAt
       });
     } catch (dbError) {
       // Se c'è un errore di database, logga e ritorna errore più dettagliato

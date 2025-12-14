@@ -16,14 +16,30 @@ interface UsePresenceOptions {
   enabled?: boolean;
 }
 
+// Genera o recupera un ID utente persistente per la sessione
+function getOrCreateUserId(): string {
+  if (typeof window === 'undefined') return `user-${Math.random().toString(36).substr(2, 9)}`;
+  
+  const storageKey = 'pastaa-user-id';
+  let userId = sessionStorage.getItem(storageKey);
+  
+  if (!userId) {
+    userId = `user-${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
+    sessionStorage.setItem(storageKey, userId);
+  }
+  
+  return userId;
+}
+
 export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
   const [users, setUsers] = useState<User[]>([]);
-  const userIdRef = useRef<string>(`user-${Math.random().toString(36).substr(2, 9)}`);
+  const userIdRef = useRef<string>(getOrCreateUserId());
   const userAgentRef = useRef<string>(typeof navigator !== 'undefined' ? navigator.userAgent : '');
   const userNameRef = useRef<string>(generateFakeName(userAgentRef.current));
   const userAvatarRef = useRef<string>(generateAvatarUrl(userNameRef.current));
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCursorRef = useRef<{ x: number; y: number } | null>(null);
+  const pageIdRef = useRef<string>(pageId);
 
   // Invia heartbeat per indicare presenza
   const sendHeartbeat = useCallback(() => {
@@ -89,8 +105,22 @@ export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
     });
   }, [pageId, enabled]);
 
+  // Funzione per rimuovere l'utente dalla presenza
+  const removePresence = useCallback(() => {
+    if (!pageIdRef.current) return;
+    
+    // Usa sendBeacon per garantire l'invio anche durante unload
+    const data = JSON.stringify({ userId: userIdRef.current });
+    navigator.sendBeacon?.(
+      `/api/public-page/${pageIdRef.current}/presence?action=leave`,
+      new Blob([data], { type: 'application/json' })
+    );
+  }, []);
+
   useEffect(() => {
     if (!enabled || !pageId) return;
+    
+    pageIdRef.current = pageId;
 
     // Invia heartbeat ogni 2 secondi
     sendHeartbeat();
@@ -113,13 +143,34 @@ export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
       }
     }, 500); // Polling ogni 500ms per presenza
 
+    // Rimuovi presenza quando la pagina viene chiusa o ricaricata
+    const handleBeforeUnload = () => {
+      removePresence();
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        removePresence();
+      } else if (document.visibilityState === 'visible') {
+        // Riprendi heartbeat quando la pagina torna visibile
+        sendHeartbeat();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
       }
       clearInterval(presenceInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Rimuovi presenza quando il componente viene smontato
+      removePresence();
     };
-  }, [pageId, enabled, sendHeartbeat]);
+  }, [pageId, enabled, sendHeartbeat, removePresence]);
 
   return {
     users,
