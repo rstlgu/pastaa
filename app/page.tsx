@@ -59,61 +59,99 @@ export default function Home() {
                   </motion.p>
                 </div>
 
-                {/* Feature Buttons - Mobile inline, Desktop cards */}
+                {/* Feature Buttons - Premium style */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 max-w-md md:max-w-3xl mx-auto w-full px-4 md:px-0"
+                  className="flex flex-col md:flex-row gap-4 md:gap-6 max-w-md md:max-w-3xl mx-auto w-full px-4 md:px-0"
                 >
                   {/* Send Button/Card */}
-                  <Link href="/send" className="w-full">
+                  <Link href="/send" className="w-full group">
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full p-3 md:p-8 rounded-xl md:rounded-2xl border-2 border-primary bg-primary/10 hover:bg-primary/20 md:border-primary/30 md:bg-card md:hover:border-primary transition-all cursor-pointer"
+                      whileHover={{ scale: 1.03, y: -4 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="relative w-full overflow-hidden"
                     >
-                      {/* Mobile: Button layout */}
-                      <div className="flex md:hidden flex-col items-center justify-center gap-2">
-                        <Send className="h-5 w-5 text-primary" />
-                        <span className="text-sm font-bold font-righteous">Send</span>
-                      </div>
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
-                      {/* Desktop: Card layout */}
-                      <div className="hidden md:flex flex-col items-center text-center space-y-4">
-                        <div className="p-4 bg-primary/10 rounded-full">
-                          <Send className="h-8 w-8 text-primary" />
+                      {/* Card content */}
+                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]">
+                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-6">
+                          {/* Icon with animated ring */}
+                          <div className="relative">
+                            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-75" style={{ animationDuration: '2s' }} />
+                            <div className="relative p-3 md:p-5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full border border-primary/30 group-hover:border-primary transition-colors">
+                              <Send className="h-6 w-6 md:h-10 md:w-10 text-primary" />
+                            </div>
+                          </div>
+                          
+                          {/* Text */}
+                          <div className="flex-1 md:space-y-3">
+                            <h3 className="text-xl md:text-3xl font-bold font-righteous text-foreground group-hover:text-primary transition-colors">
+                              Send
+                            </h3>
+                            <p className="hidden md:block text-base text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
+                              {t('sendDescription')}
+                            </p>
+                            <p className="md:hidden text-xs text-muted-foreground">
+                              E2E Encrypted
+                            </p>
+                          </div>
+                          
+                          {/* Arrow indicator - mobile only */}
+                          <div className="md:hidden">
+                            <svg className="h-5 w-5 text-primary/50 group-hover:text-primary group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
-                        <h3 className="text-2xl font-bold font-righteous">Send</h3>
-                        <p className="text-base text-muted-foreground">
-                          {t('sendDescription')}
-                        </p>
                       </div>
                     </motion.div>
                   </Link>
 
                   {/* Share Button/Card */}
-                  <Link href={`/${Math.random().toString(36).slice(2, 10)}`} className="w-full">
+                  <Link href={`/${Math.random().toString(36).slice(2, 10)}`} className="w-full group">
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full p-3 md:p-8 rounded-xl md:rounded-2xl border-2 border-primary bg-primary/10 hover:bg-primary/20 md:border-primary/30 md:bg-card md:hover:border-primary transition-all cursor-pointer"
+                      whileHover={{ scale: 1.03, y: -4 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="relative w-full overflow-hidden"
                     >
-                      {/* Mobile: Button layout */}
-                      <div className="flex md:hidden flex-col items-center justify-center gap-2">
-                        <Share2 className="h-5 w-5 text-primary" />
-                        <span className="text-sm font-bold font-righteous">Share</span>
-                      </div>
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
-                      {/* Desktop: Card layout */}
-                      <div className="hidden md:flex flex-col items-center text-center space-y-4">
-                        <div className="p-4 bg-primary/10 rounded-full">
-                          <Share2 className="h-8 w-8 text-primary" />
+                      {/* Card content */}
+                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]">
+                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-6">
+                          {/* Icon with animated ring */}
+                          <div className="relative">
+                            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-75" style={{ animationDuration: '2s' }} />
+                            <div className="relative p-3 md:p-5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full border border-primary/30 group-hover:border-primary transition-colors">
+                              <Share2 className="h-6 w-6 md:h-10 md:w-10 text-primary" />
+                            </div>
+                          </div>
+                          
+                          {/* Text */}
+                          <div className="flex-1 md:space-y-3">
+                            <h3 className="text-xl md:text-3xl font-bold font-righteous text-foreground group-hover:text-primary transition-colors">
+                              Share
+                            </h3>
+                            <p className="hidden md:block text-base text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
+                              {t('shareDescription')}
+                            </p>
+                            <p className="md:hidden text-xs text-muted-foreground">
+                              Real-time Collab
+                            </p>
+                          </div>
+                          
+                          {/* Arrow indicator - mobile only */}
+                          <div className="md:hidden">
+                            <svg className="h-5 w-5 text-primary/50 group-hover:text-primary group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
-                        <h3 className="text-2xl font-bold font-righteous">Share</h3>
-                        <p className="text-base text-muted-foreground">
-                          {t('shareDescription')}
-                        </p>
                       </div>
                     </motion.div>
                   </Link>
