@@ -621,10 +621,6 @@ function ChatRoomContent() {
                 </svg>
               </button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-2 text-center flex items-center justify-center gap-1">
-              <Lock className="h-3 w-3" />
-              <span>End-to-end encrypted</span>
-            </p>
           </form>
         </div>
 
