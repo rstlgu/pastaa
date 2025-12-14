@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Users, Lock, LogOut, Copy, Check, Shield } from "lucide-react";
+import { Users, Lock, LogOut, Copy, Check, Shield } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import Link from "next/link";
@@ -528,27 +528,39 @@ function ChatRoomContent() {
           </div>
 
           {/* Message input */}
-          <form onSubmit={sendMessage} className="p-4 border-t-2 border-primary/20 bg-card/50">
-            <div className="flex gap-2">
+          <form onSubmit={sendMessage} className="p-3 md:p-4 border-t-2 border-primary/20 bg-card/50">
+            <div className="relative flex items-center">
               <input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="flex-1 px-4 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-xl outline-none transition-colors"
+                className="w-full pl-4 pr-14 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-full outline-none transition-colors text-sm"
                 disabled={!isConnected}
               />
               <button
                 type="submit"
                 disabled={!inputMessage.trim() || !isConnected}
-                className="px-4 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-1.5 h-9 w-9 flex items-center justify-center bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
               >
-                <Send className="h-5 w-5" />
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              <Lock className="h-3 w-3 inline-block mr-1" />
-              Messages are end-to-end encrypted
+            <p className="text-[10px] text-muted-foreground mt-2 text-center flex items-center justify-center gap-1">
+              <Lock className="h-3 w-3" />
+              <span>End-to-end encrypted</span>
             </p>
           </form>
         </div>
