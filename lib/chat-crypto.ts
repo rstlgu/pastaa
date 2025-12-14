@@ -215,6 +215,11 @@ export function deriveLayer3SharedSecret(
   return combinedKey;
 }
 
+// Simple shared key derived only from channel password (for group chat)
+export function deriveGroupKey(channelPassword: string): Uint8Array {
+  return hashPassword(channelPassword + "-pastaa-chat-key");
+}
+
 export function encryptLayer3(
   plaintext: string,
   sharedSecret: Uint8Array

@@ -10,12 +10,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Pusher from "pusher-js";
 import {
   generateLayer3KeyPair,
-  deriveLayer3SharedSecret,
+  deriveGroupKey,
   encryptLayer3,
   decryptLayer3,
   hashChannelName,
   bytesToHex,
-  hexToBytes,
   Layer3Keys,
   initLayer2Session,
   completeLayer2Handshake,
@@ -60,7 +59,17 @@ function ChatRoomContent() {
   const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
   const myKeysRef = useRef<Layer3Keys | null>(null);
   const layer2SessionRef = useRef<Layer2Session | null>(null);
-  const myIdRef = useRef<string>(`user-${Math.random().toString(36).slice(2, 11)}`);
+  
+  // Persist user ID in sessionStorage to prevent duplicates on refresh
+  const myIdRef = useRef<string>(
+    typeof window !== "undefined" 
+      ? (sessionStorage.getItem("chat-userId") || (() => {
+          const id = `user-${Math.random().toString(36).slice(2, 11)}`;
+          sessionStorage.setItem("chat-userId", id);
+          return id;
+        })())
+      : `user-${Math.random().toString(36).slice(2, 11)}`
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelPasswordRef = useRef<string>("");
 
@@ -76,36 +85,24 @@ function ChatRoomContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Derive shared secret with a member
-  const deriveSharedSecretWithMember = useCallback((memberPublicKey: string): Uint8Array | null => {
-    if (!myKeysRef.current) return null;
-    try {
-      return deriveLayer3SharedSecret(
-        myKeysRef.current.privateKey,
-        hexToBytes(memberPublicKey),
-        channelPasswordRef.current
-      );
-    } catch (error) {
-      console.error("Error deriving shared secret:", error);
-      return null;
-    }
+  // Get group encryption key (derived from channel password)
+  const getGroupKey = useCallback((): Uint8Array => {
+    return deriveGroupKey(channelPasswordRef.current);
   }, []);
 
-  // Decrypt message from a member
+  // Decrypt message
   const decryptMessage = useCallback((
     encryptedContent: string,
     nonce: string,
-    senderPublicKey: string
   ): string | null => {
-    const sharedSecret = deriveSharedSecretWithMember(senderPublicKey);
-    if (!sharedSecret) return null;
     try {
-      return decryptLayer3(encryptedContent, nonce, sharedSecret);
+      const groupKey = getGroupKey();
+      return decryptLayer3(encryptedContent, nonce, groupKey);
     } catch (error) {
       console.error("Error decrypting message:", error);
       return null;
     }
-  }, [deriveSharedSecretWithMember]);
+  }, [getGroupKey]);
 
   // Initialize Pusher connection
   useEffect(() => {
@@ -160,6 +157,16 @@ function ChatRoomContent() {
         setIsConnecting(false);
         setIsConnected(true);
 
+        // Add self to members list
+        setMembers(new Map([[
+          myIdRef.current,
+          {
+            odiceId: myIdRef.current,
+            username: username,
+            publicKey: bytesToHex(myKeysRef.current!.publicKey),
+          }
+        ]]));
+
         // Add system message
         setMessages([{
           id: "system-welcome",
@@ -171,7 +178,7 @@ function ChatRoomContent() {
           isSystem: true,
         }]);
 
-        // Announce join to channel
+        // Announce join to channel (so others know about us)
         fetch("/api/chat/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -202,11 +209,10 @@ function ChatRoomContent() {
         // Don't process own messages
         if (data.from === myIdRef.current) return;
 
-        // Decrypt message
+        // Decrypt message using group key
         const decryptedContent = decryptMessage(
           data.encryptedContent,
-          data.nonce,
-          data.senderPublicKey
+          data.nonce
         );
 
         if (decryptedContent) {
@@ -272,7 +278,26 @@ function ChatRoomContent() {
 
     initChat();
 
+    // Cleanup function to notify server when leaving
+    const handleLeave = () => {
+      if (channelHash && myIdRef.current) {
+        navigator.sendBeacon(
+          "/api/chat/leave",
+          JSON.stringify({
+            channelHash,
+            userId: myIdRef.current,
+          })
+        );
+      }
+    };
+
+    // Listen for page unload
+    window.addEventListener("beforeunload", handleLeave);
+    
     return () => {
+      window.removeEventListener("beforeunload", handleLeave);
+      handleLeave();
+      
       if (channelRef.current) {
         channelRef.current.unbind_all();
       }
@@ -302,15 +327,9 @@ function ChatRoomContent() {
     
     setInputMessage("");
 
-    // Layer 3: Encrypt message E2E with our key + channel password
-    const { ciphertext, nonce } = encryptLayer3(
-      content,
-      deriveLayer3SharedSecret(
-        myKeysRef.current.privateKey,
-        myKeysRef.current.publicKey,
-        channelPasswordRef.current
-      )
-    );
+    // Layer 3: Encrypt message E2E with group key (derived from channel password)
+    const groupKey = getGroupKey();
+    const { ciphertext, nonce } = encryptLayer3(content, groupKey);
 
     // Prepare payload
     const payload = JSON.stringify({
@@ -343,7 +362,7 @@ function ChatRoomContent() {
     } catch (error) {
       console.error("Error sending message:", error);
     }
-  }, [inputMessage, isConnected, username, channelHash]);
+  }, [inputMessage, isConnected, username, channelHash, getGroupKey]);
 
   const copyChannelLink = async () => {
     const link = `${window.location.origin}/chat/room?channel=${encodeURIComponent(channelName)}&user=`;
