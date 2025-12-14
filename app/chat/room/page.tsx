@@ -464,7 +464,7 @@ function ChatRoomContent() {
   const membersArray = Array.from(members.values()).filter(m => m.odiceId !== myIdRef.current);
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="border-b-2 border-primary bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
@@ -603,7 +603,7 @@ function ChatRoomContent() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="w-full pl-4 pr-14 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-full outline-none transition-colors text-sm"
+                className="w-full pl-4 pr-14 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-full outline-none transition-colors text-base"
                 disabled={!isConnected}
               />
               <button

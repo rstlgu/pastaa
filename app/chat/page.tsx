@@ -93,7 +93,7 @@ export default function ChatHome() {
                 value={channelName}
                 onChange={(e) => setChannelName(e.target.value)}
                 placeholder="my-secret-channel"
-                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors"
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors"
                 required
                 autoComplete="off"
               />
@@ -110,7 +110,7 @@ export default function ChatHome() {
                   value={channelPassword}
                   onChange={(e) => setChannelPassword(e.target.value)}
                   placeholder="Optional but recommended"
-                  className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors pr-11"
+                  className="w-full px-3 md:px-4 py-2.5 md:py-3 text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors pr-11"
                   autoComplete="off"
                 />
                 <button
@@ -136,7 +136,7 @@ export default function ChatHome() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Anonymous"
-                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors"
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors"
                 required
                 autoComplete="off"
               />
