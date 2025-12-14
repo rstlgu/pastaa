@@ -756,38 +756,36 @@ export default function PublicPageEditor() {
                 )}
                 
                 {/* Expiration Timer Icon */}
-                {pageExists && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setShowExpirationModal(true)}
-                        className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors relative"
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setShowExpirationModal(true)}
+                      className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors relative"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={expiresAt ? "text-primary" : "text-muted-foreground"}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-muted-foreground"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
-                        {expiresAt && (
-                          <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('contentDuration')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {expiresAt && (
+                        <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('contentDuration')}</p>
+                  </TooltipContent>
+                </Tooltip>
                 
                 <GitHubBadge />
                 <ThemeToggle />
@@ -1035,8 +1033,57 @@ export default function PublicPageEditor() {
                   )}
                 </>
               ) : (
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground">{t('noExpiration')}</p>
+                <div className="space-y-4">
+                  <div className="bg-muted rounded-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground">{t('noExpiration')}</p>
+                  </div>
+                  
+                  {/* Imposta scadenza - per pagine senza scadenza */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{t('changeExpiration')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: t('duration1Hour'), value: 1 * 60 * 60 * 1000 },
+                        { label: t('duration6Hours'), value: 6 * 60 * 60 * 1000 },
+                        { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
+                        { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
+                        { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/api/public-page', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                  id: pageId, 
+                                  content: JSON.stringify({ docs: contentDocs, code: contentCode }),
+                                  updateExpiration: option.value,
+                                }),
+                              });
+                              if (response.ok) {
+                                const data = await response.json();
+                                if (data.expiresAt) {
+                                  setExpiresAt(new Date(data.expiresAt));
+                                }
+                                // Imposta come creatore se ha impostato la scadenza
+                                if (typeof window !== 'undefined') {
+                                  sessionStorage.setItem(creatorKeyRef.current, 'true');
+                                  setIsCreator(true);
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Errore impostazione scadenza:', error);
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-muted hover:bg-primary hover:text-primary-foreground"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
