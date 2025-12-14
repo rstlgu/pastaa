@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function ChatHome() {
-  const { t } = useLanguage();
+  useLanguage(); // Hook per il contesto
   const router = useRouter();
   const [channelName, setChannelName] = useState("");
   const [channelPassword, setChannelPassword] = useState("");

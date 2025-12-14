@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { p384 } from '@noble/curves/p384';
-import { bytesToHex } from '@noble/ciphers/utils';
+import { p384 } from '@noble/curves/nist.js';
+import { bytesToHex } from '@noble/ciphers/utils.js';
 
 // Server-side Layer 2 key pair (regenerated per instance)
 // In production, you might want to persist this or use HSM
@@ -8,7 +8,7 @@ let serverKeyPair: { privateKey: Uint8Array; publicKey: Uint8Array } | null = nu
 
 function getServerKeyPair() {
   if (!serverKeyPair) {
-    const privateKey = p384.utils.randomPrivateKey();
+    const privateKey = p384.utils.randomSecretKey();
     const publicKey = p384.getPublicKey(privateKey);
     serverKeyPair = { privateKey, publicKey };
   }

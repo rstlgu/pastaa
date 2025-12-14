@@ -6,12 +6,20 @@
  * Layer 3: ECDH Curve25519 + ChaCha20-Poly1305 (client-client, E2E)
  */
 
-import { p384 } from '@noble/curves/p384';
-import { x25519 } from '@noble/curves/ed25519';
-import { chacha20poly1305 } from '@noble/ciphers/chacha';
-import { gcm } from '@noble/ciphers/aes';
-import { randomBytes } from '@noble/ciphers/webcrypto';
-import { utf8ToBytes, bytesToUtf8, bytesToHex, hexToBytes } from '@noble/ciphers/utils';
+import { p384 } from '@noble/curves/nist.js';
+import { x25519 } from '@noble/curves/ed25519.js';
+import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
+import { gcm } from '@noble/ciphers/aes.js';
+// Use native crypto for random bytes
+function randomBytes(length: number): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(length));
+}
+
+// Helper to safely convert Uint8Array to ArrayBuffer (for Web Crypto API)
+function toArrayBuffer(arr: Uint8Array): ArrayBuffer {
+  return arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength) as ArrayBuffer;
+}
+import { utf8ToBytes, bytesToUtf8, bytesToHex, hexToBytes } from '@noble/ciphers/utils.js';
 
 // ============================================
 // LAYER 2: Client-Server Encryption (AES-256-GCM)
@@ -31,7 +39,7 @@ export interface Layer2Session {
 }
 
 export function generateLayer2KeyPair(): Layer2Keys {
-  const privateKey = p384.utils.randomPrivateKey();
+  const privateKey = p384.utils.randomSecretKey();
   const publicKey = p384.getPublicKey(privateKey);
   return { privateKey, publicKey };
 }
@@ -93,7 +101,7 @@ export async function signWithRSA(
   const signature = await crypto.subtle.sign(
     { name: 'RSA-PSS', saltLength: 32 },
     privateKey,
-    data
+    toArrayBuffer(data)
   );
   return new Uint8Array(signature);
 }
@@ -106,8 +114,8 @@ export async function verifyRSASignature(
   return await crypto.subtle.verify(
     { name: 'RSA-PSS', saltLength: 32 },
     publicKey,
-    signature,
-    data
+    toArrayBuffer(signature),
+    toArrayBuffer(data)
   );
 }
 
@@ -119,7 +127,7 @@ export async function exportPublicKey(key: CryptoKey): Promise<string> {
 export async function importPublicKey(hexKey: string): Promise<CryptoKey> {
   return await crypto.subtle.importKey(
     'spki',
-    hexToBytes(hexKey),
+    toArrayBuffer(hexToBytes(hexKey)),
     { name: 'RSA-PSS', hash: 'SHA-256' },
     true,
     ['verify']
@@ -161,7 +169,7 @@ export function completeLayer2Handshake(
   };
 }
 
-export function layer2Encrypt(session: Layer2Session, data: string): { encrypted: string; iv: string } | null {
+export function layer2Encrypt(session: Layer2Session, data: string): { ciphertext: string; iv: string } | null {
   if (!session.established || !session.sharedSecret) return null;
   return encryptLayer2(data, session.sharedSecret);
 }
@@ -185,7 +193,7 @@ export interface Layer3Keys {
 }
 
 export function generateLayer3KeyPair(): Layer3Keys {
-  const privateKey = x25519.utils.randomPrivateKey();
+  const privateKey = x25519.utils.randomSecretKey();
   const publicKey = x25519.getPublicKey(privateKey);
   return { privateKey, publicKey };
 }

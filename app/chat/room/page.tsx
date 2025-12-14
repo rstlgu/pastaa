@@ -313,7 +313,7 @@ function ChatRoomContent() {
     );
 
     // Prepare payload
-    let payload = JSON.stringify({
+    const payload = JSON.stringify({
       channelHash,
       messageId,
       fromUserId: myIdRef.current,
@@ -324,7 +324,7 @@ function ChatRoomContent() {
     });
 
     // Layer 2: Optionally encrypt the entire payload for server transit
-    let layer2Data: { encrypted: string; iv: string } | null = null;
+    let layer2Data: { ciphertext: string; iv: string } | null = null;
     if (layer2SessionRef.current?.established) {
       layer2Data = layer2Encrypt(layer2SessionRef.current, payload);
     }
@@ -332,7 +332,7 @@ function ChatRoomContent() {
     try {
       // Send with Layer 2 encryption if available
       const requestBody = layer2Data
-        ? { layer2: true, encrypted: layer2Data.encrypted, iv: layer2Data.iv }
+        ? { layer2: true, ciphertext: layer2Data.ciphertext, iv: layer2Data.iv }
         : JSON.parse(payload);
       
       await fetch("/api/chat/send", {
