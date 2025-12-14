@@ -62,11 +62,11 @@ function ChatRoomContent() {
   const myIdRef = useRef<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelPasswordRef = useRef<string>("");
-  const isInitializedRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Initialize user ID and password from sessionStorage (client-side only)
   useEffect(() => {
-    if (typeof window === "undefined" || isInitializedRef.current) return;
+    if (typeof window === "undefined" || !channelName) return;
     
     // Get or create user ID - use channel-specific ID to avoid conflicts
     const storageKey = `chat-userId-${channelName}`;
@@ -80,7 +80,7 @@ function ChatRoomContent() {
     // Get channel password
     channelPasswordRef.current = sessionStorage.getItem(`chat-pwd-${channelName}`) || "";
     
-    isInitializedRef.current = true;
+    setIsReady(true);
   }, [channelName]);
 
   // Scroll to bottom on new messages
@@ -115,7 +115,7 @@ function ChatRoomContent() {
     }
 
     // Wait for initialization
-    if (!isInitializedRef.current || !myIdRef.current) {
+    if (!isReady || !myIdRef.current) {
       return;
     }
 
@@ -218,21 +218,31 @@ function ChatRoomContent() {
         if (data.from === myIdRef.current) return;
 
         // Decrypt message using group key
-        const decryptedContent = decryptMessage(
-          data.encryptedContent,
-          data.nonce
-        );
-
-        if (decryptedContent) {
-          setMessages((prev) => [...prev, {
-            id: data.id,
-            from: data.from,
-            fromUsername: data.fromUsername,
-            content: decryptedContent,
-            timestamp: new Date(data.timestamp),
-            encrypted: true,
-          }]);
+        let content = "[Encrypted - wrong password?]";
+        let decryptionFailed = true;
+        
+        try {
+          const decryptedContent = decryptMessage(
+            data.encryptedContent,
+            data.nonce
+          );
+          if (decryptedContent) {
+            content = decryptedContent;
+            decryptionFailed = false;
+          }
+        } catch (error) {
+          console.error("Decryption failed:", error);
         }
+
+        setMessages((prev) => [...prev, {
+          id: data.id,
+          from: data.from,
+          fromUsername: data.fromUsername,
+          content,
+          timestamp: new Date(data.timestamp),
+          encrypted: true,
+          isSystem: decryptionFailed,
+        }]);
       });
 
       // Handle member join
@@ -357,7 +367,7 @@ function ChatRoomContent() {
         pusherRef.current.disconnect();
       }
     };
-  }, [channelName, username, router, decryptMessage, channelHash]);
+  }, [channelName, username, router, decryptMessage, channelHash, isReady]);
 
   const sendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -449,7 +459,8 @@ function ChatRoomContent() {
     return null;
   }
 
-  const membersArray = Array.from(members.values());
+  // Filter out self from members list (we show "you" separately)
+  const membersArray = Array.from(members.values()).filter(m => m.odiceId !== myIdRef.current);
 
   return (
     <div className="h-screen bg-background flex flex-col">
