@@ -1,90 +1,153 @@
-# 🍝 Pastaa - Secure Text Sharing
+<div align="center">
+  <br />
+  <img src="public/logo.svg" alt="Pastaa Logo" width="80" height="80" />
+  <h1>Pastaa</h1>
+  <p><strong>Secure Text Sharing with End-to-End Encryption</strong></p>
+  <br />
+  <p>
+    <a href="#features">Features</a> •
+    <a href="#technology-stack">Tech Stack</a> •
+    <a href="#quick-start">Quick Start</a> •
+    <a href="#security">Security</a> •
+    <a href="#contributing">Contributing</a>
+  </p>
+  <br />
+</div>
 
-Web platform to securely share text with **end-to-end encryption** and **zero registration**.
+---
 
-## ✨ Features
+## Features
 
-- 🔒 **End-to-End Encryption**: AES-GCM 256-bit
-- 🚫 **Zero Registration**: No user data saved
-- ⚡ **Fast**: Client-side encryption with Web Crypto API
-- 🔥 **Burn After Reading**: Automatic deletion after first read
-- ⏰ **Customizable Expiry**: 1h, 4h, 1d, 7d
-- 🔑 **Optional Password**: Second level of protection
-- 🎨 **Modern UI**: Dark/light theme, animations with Framer Motion
-- 📱 **Responsive**: Mobile-first design with native share
+- **End-to-End Encryption** — AES-GCM 256-bit encryption, keys never leave your browser
+- **Zero Registration** — No accounts, no tracking, no cookies
+- **Burn After Reading** — Automatic deletion after first view
+- **Custom Expiry** — Set content lifetime: 1 hour to 30 days, or never
+- **Password Protection** — Optional second layer of security
+- **Real-time Collaboration** — Share pages with live presence indicators
+- **Code Editor** — Syntax highlighting for 12+ languages
+- **Modern UI** — Dark/light themes, smooth animations, mobile-first design
 
-## 🛠️ Technology Stack
+---
 
-- **Framework**: Next.js 14 (App Router)
-- **UI**: React, Tailwind CSS, Shadcn UI
-- **Animations**: Framer Motion
-- **Encryption**: Web Crypto API
-- **Database**: PostgreSQL + Prisma (SQLite for local dev)
-- **TypeScript**: Type-safe
-- **Deploy**: Vercel-ready
+## Technology Stack
 
-## 🚀 Quick Start
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| UI | React, Tailwind CSS, Shadcn UI |
+| Animations | Framer Motion |
+| Encryption | Web Crypto API |
+| Database | PostgreSQL + Prisma |
+| Editor | CodeMirror, TipTap |
+| Deployment | Vercel |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database (or use Supabase/Vercel Postgres)
 
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/rstlgu/pastaa.git
+cd pastaa
+
 # Install dependencies
 npm install
+
+# Configure environment
+cp env.example .env
+# Edit .env with your database URL
 
 # Setup database
 npm run db:push
 
-# Start development
+# Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
+---
 
-## 🔐 Security Architecture
+## Security
 
-### Encryption Flow
+### How It Works
 
-1. **Creation**: 
-   - User writes text
-   - AES-256 key generation in browser
-   - Encryption with AES-GCM
-   - Send only encrypted content to server
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         YOUR BROWSER                             │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Generate AES-256 key                                        │
+│  2. Encrypt text with key                                       │
+│  3. Send encrypted data to server                               │
+│  4. Key stays in URL fragment (#) — never sent to server        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                           SERVER                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  • Receives only encrypted content                              │
+│  • Cannot decrypt without the key                               │
+│  • Zero knowledge architecture                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-2. **Sharing**:
-   - URL: `https://site.com/view/{id}#base64_key`
-   - The fragment `#key` is NEVER sent to the server
-   - Stays only in the browser
+### Security Guarantees
 
-3. **Reading**:
-   - Download encrypted content
-   - Extract key from fragment
-   - Decrypt locally in browser
+| Feature | Status |
+|---------|--------|
+| Key transmitted to server | Never |
+| Server can read your content | No |
+| Encryption standard | AES-GCM 256-bit |
+| IV (Initialization Vector) | Random per paste |
+| User tracking | None |
+| Cookies | None |
+| Automatic expiry deletion | Yes |
 
-### Security
+---
 
-- ✅ Key never transmitted to server
-- ✅ Server only sees encrypted data
-- ✅ Encryption: AES-GCM 256-bit
-- ✅ Random IVs for each paste
-- ✅ No tracking, no cookies
-- ✅ Automatic expiry deletion
+## Configuration
 
+Create a `.env` file in the root directory:
 
-## 🔧 Configuration
+```env
+DATABASE_URL="postgresql://user:password@host:5432/database"
+```
 
-### Environment Variables
-
-Create `.env` file:
+For local development with SQLite:
 
 ```env
 DATABASE_URL="file:./dev.db"
 ```
 
-## License
-
-MIT License - Use freely!
+---
 
 ## Contributing
 
-Pull requests welcome! For major changes, please open an issue first.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+MIT License — Use freely!
+
+---
+
+<div align="center">
+  <sub>Built with care by <a href="https://github.com/rstlgu">rstlgu</a></sub>
+</div>
