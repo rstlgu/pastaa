@@ -48,6 +48,13 @@ export interface MemberLeaveEvent {
   userId: string;
 }
 
+export interface MemberSyncEvent {
+  userId: string;
+  username: string;
+  publicKey: string;
+  replyTo: string; // ID of the user who requested sync
+}
+
 export interface KeyExchangeEvent {
   fromUserId: string;
   toUserId: string;

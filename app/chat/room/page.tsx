@@ -21,7 +21,7 @@ import {
   layer2Encrypt,
   Layer2Session,
 } from "@/lib/chat-crypto";
-import type { ChatMessageEvent, MemberJoinEvent, MemberLeaveEvent } from "@/lib/pusher";
+import type { ChatMessageEvent, MemberJoinEvent, MemberLeaveEvent, MemberSyncEvent } from "@/lib/pusher";
 
 interface ChatMember {
   odiceId: string;
@@ -239,7 +239,9 @@ function ChatRoomContent() {
       channel.bind("member-join", (data: MemberJoinEvent) => {
         if (data.userId === myIdRef.current) return;
 
+        // Check if member already exists to avoid duplicates
         setMembers((prev) => {
+          if (prev.has(data.userId)) return prev;
           const newMembers = new Map(prev);
           newMembers.set(data.userId, {
             odiceId: data.userId,
@@ -249,9 +251,9 @@ function ChatRoomContent() {
           return newMembers;
         });
 
-        // Respond with my info so the new member knows about me
+        // Respond with member-sync so the new user knows about us
         if (myKeysRef.current) {
-          fetch("/api/chat/join", {
+          fetch("/api/chat/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -259,19 +261,27 @@ function ChatRoomContent() {
               userId: myIdRef.current,
               username,
               publicKey: bytesToHex(myKeysRef.current.publicKey),
+              replyTo: data.userId,
             }),
           }).catch(console.error);
         }
 
-        setMessages((prev) => [...prev, {
-          id: `system-join-${data.userId}-${Date.now()}`,
-          from: "system",
-          fromUsername: "System",
-          content: `${data.username} joined the channel`,
-          timestamp: new Date(),
-          encrypted: false,
-          isSystem: true,
-        }]);
+        // Only show join message if this is a new member
+        setMessages((prev) => {
+          // Check if we already have a join message for this user
+          const hasJoinMessage = prev.some(m => m.id.startsWith(`system-join-${data.userId}`));
+          if (hasJoinMessage) return prev;
+          
+          return [...prev, {
+            id: `system-join-${data.userId}`,
+            from: "system",
+            fromUsername: "System",
+            content: `${data.username} joined the channel`,
+            timestamp: new Date(),
+            encrypted: false,
+            isSystem: true,
+          }];
+        });
       });
 
       // Handle member leave
@@ -293,6 +303,25 @@ function ChatRoomContent() {
             }]);
           }
 
+          return newMembers;
+        });
+      });
+
+      // Handle member sync (response to our join)
+      channel.bind("member-sync", (data: MemberSyncEvent) => {
+        // Only process if this sync is for us
+        if (data.replyTo !== myIdRef.current) return;
+        if (data.userId === myIdRef.current) return;
+
+        // Add member silently (no join message, they were already there)
+        setMembers((prev) => {
+          if (prev.has(data.userId)) return prev;
+          const newMembers = new Map(prev);
+          newMembers.set(data.userId, {
+            odiceId: data.userId,
+            username: data.username,
+            publicKey: data.publicKey,
+          });
           return newMembers;
         });
       });
