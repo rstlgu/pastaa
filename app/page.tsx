@@ -64,23 +64,23 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="flex flex-col md:flex-row gap-4 md:gap-6 max-w-md md:max-w-3xl mx-auto w-full px-4 md:px-0"
+                  className="flex flex-col md:flex-row md:items-stretch gap-4 md:gap-6 max-w-md md:max-w-3xl mx-auto w-full px-4 md:px-0"
                 >
                   {/* Send Button/Card */}
-                  <Link href="/send" className="w-full group">
+                  <Link href="/send" className="w-full group md:flex-1">
                     <motion.div
                       whileHover={{ scale: 1.03, y: -4 }}
                       whileTap={{ scale: 0.97 }}
-                      className="relative w-full overflow-hidden"
+                      className="relative w-full h-full overflow-hidden"
                     >
                       {/* Glow effect */}
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
                       {/* Card content */}
-                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]">
-                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-6">
+                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)] h-full">
+                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-4 h-full">
                           {/* Icon with animated ring */}
-                          <div className="relative">
+                          <div className="relative flex-shrink-0">
                             <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-75" style={{ animationDuration: '2s' }} />
                             <div className="relative p-3 md:p-5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full border border-primary/30 group-hover:border-primary transition-colors">
                               <Send className="h-6 w-6 md:h-10 md:w-10 text-primary" />
@@ -88,12 +88,12 @@ export default function Home() {
                           </div>
                           
                           {/* Text */}
-                          <div className="flex-1 md:space-y-3">
+                          <div className="flex-1 md:space-y-2">
                             <h3 className="text-xl md:text-3xl font-bold font-righteous text-foreground group-hover:text-primary transition-colors">
                               Send
                             </h3>
-                            <p className="hidden md:block text-base text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
-                              {t('sendDescription')}
+                            <p className="hidden md:block text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors md:min-h-[3rem]">
+                              E2E encrypted messaging
                             </p>
                             <p className="md:hidden text-xs text-muted-foreground">
                               E2E Encrypted
@@ -112,20 +112,20 @@ export default function Home() {
                   </Link>
 
                   {/* Share Button/Card */}
-                  <Link href={`/${Math.random().toString(36).slice(2, 10)}`} className="w-full group">
+                  <Link href={`/${Math.random().toString(36).slice(2, 10)}`} className="w-full group md:flex-1">
                     <motion.div
                       whileHover={{ scale: 1.03, y: -4 }}
                       whileTap={{ scale: 0.97 }}
-                      className="relative w-full overflow-hidden"
+                      className="relative w-full h-full overflow-hidden"
                     >
                       {/* Glow effect */}
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
                       {/* Card content */}
-                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]">
-                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-6">
+                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)] h-full">
+                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-4 h-full">
                           {/* Icon with animated ring */}
-                          <div className="relative">
+                          <div className="relative flex-shrink-0">
                             <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-75" style={{ animationDuration: '2s' }} />
                             <div className="relative p-3 md:p-5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full border border-primary/30 group-hover:border-primary transition-colors">
                               <Share2 className="h-6 w-6 md:h-10 md:w-10 text-primary" />
@@ -133,12 +133,12 @@ export default function Home() {
                           </div>
                           
                           {/* Text */}
-                          <div className="flex-1 md:space-y-3">
+                          <div className="flex-1 md:space-y-2">
                             <h3 className="text-xl md:text-3xl font-bold font-righteous text-foreground group-hover:text-primary transition-colors">
                               Share
                             </h3>
-                            <p className="hidden md:block text-base text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
-                              {t('shareDescription')}
+                            <p className="hidden md:block text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors md:min-h-[3rem]">
+                              Real-time collaboration
                             </p>
                             <p className="md:hidden text-xs text-muted-foreground">
                               Real-time Collab
@@ -157,20 +157,20 @@ export default function Home() {
                   </Link>
 
                   {/* Chat Button/Card */}
-                  <a href="https://chat.pastaa.io" className="w-full group">
+                  <a href="https://chat.pastaa.io" className="w-full group md:flex-1">
                     <motion.div
                       whileHover={{ scale: 1.03, y: -4 }}
                       whileTap={{ scale: 0.97 }}
-                      className="relative w-full overflow-hidden"
+                      className="relative w-full h-full overflow-hidden"
                     >
                       {/* Glow effect */}
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
                       {/* Card content */}
-                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]">
-                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-6">
+                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)] h-full">
+                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-4 h-full">
                           {/* Icon with animated ring */}
-                          <div className="relative">
+                          <div className="relative flex-shrink-0">
                             <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-75" style={{ animationDuration: '2s' }} />
                             <div className="relative p-3 md:p-5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full border border-primary/30 group-hover:border-primary transition-colors">
                               <MessageSquare className="h-6 w-6 md:h-10 md:w-10 text-primary" />
@@ -178,12 +178,12 @@ export default function Home() {
                           </div>
                           
                           {/* Text */}
-                          <div className="flex-1 md:space-y-3">
+                          <div className="flex-1 md:space-y-2">
                             <h3 className="text-xl md:text-3xl font-bold font-righteous text-foreground group-hover:text-primary transition-colors">
                               Chat
                             </h3>
-                            <p className="hidden md:block text-base text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
-                              Secure group chat with triple encryption
+                            <p className="hidden md:block text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors md:min-h-[3rem]">
+                              Secure encrypted group chat
                             </p>
                             <p className="md:hidden text-xs text-muted-foreground">
                               E2E Group Chat

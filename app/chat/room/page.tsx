@@ -494,11 +494,11 @@ function ChatRoomContent() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className={`flex ${msg.from === myIdRef.current ? "justify-end" : "justify-start"}`}
+                  className={`flex ${msg.isSystem ? "justify-center" : msg.from === myIdRef.current ? "justify-end" : "justify-start"}`}
                 >
                   {msg.isSystem ? (
-                    <div className="bg-muted/50 text-muted-foreground text-sm px-4 py-2 rounded-lg text-center max-w-md">
-                      <Shield className="h-4 w-4 inline-block mr-2" />
+                    <div className="bg-muted/50 text-muted-foreground text-xs px-4 py-1.5 rounded-full">
+                      <Shield className="h-3 w-3 inline-block mr-1.5 -mt-0.5" />
                       {msg.content}
                     </div>
                   ) : (
