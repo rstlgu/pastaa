@@ -16,10 +16,6 @@ import {
   hashChannelName,
   bytesToHex,
   Layer3Keys,
-  initLayer2Session,
-  completeLayer2Handshake,
-  layer2Encrypt,
-  Layer2Session,
 } from "@/lib/chat-crypto";
 import type { ChatMessageEvent, MemberJoinEvent, MemberLeaveEvent, MemberSyncEvent } from "@/lib/pusher";
 
@@ -58,7 +54,6 @@ function ChatRoomContent() {
   const pusherRef = useRef<Pusher | null>(null);
   const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
   const myKeysRef = useRef<Layer3Keys | null>(null);
-  const layer2SessionRef = useRef<Layer2Session | null>(null);
   const myIdRef = useRef<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelPasswordRef = useRef<string>("");
@@ -122,28 +117,6 @@ function ChatRoomContent() {
     const initChat = async () => {
       // Generate E2E encryption keys (Layer 3)
       myKeysRef.current = generateLayer3KeyPair();
-
-      // Initialize Layer 2 session (client-server encryption)
-      const { session, clientPublicKeyHex } = initLayer2Session();
-      
-      try {
-        // Perform Layer 2 handshake with server
-        const handshakeResponse = await fetch("/api/chat/handshake", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ clientPublicKey: clientPublicKeyHex }),
-        });
-        
-        if (handshakeResponse.ok) {
-          const { serverPublicKey } = await handshakeResponse.json();
-          // Complete Layer 2 handshake - derive shared secret
-          layer2SessionRef.current = completeLayer2Handshake(session, serverPublicKey);
-          console.log("Layer 2 encryption established");
-        }
-      } catch (error) {
-        console.warn("Layer 2 handshake failed, continuing without:", error);
-        // Continue without Layer 2 - still have Layer 3 E2E
-      }
 
       // Hash channel name for server (server only sees hash, never real name)
       const hash = await hashChannelName(channelName);
@@ -403,22 +376,12 @@ function ChatRoomContent() {
       senderPublicKey: bytesToHex(myKeysRef.current.publicKey),
     });
 
-    // Layer 2: Optionally encrypt the entire payload for server transit
-    let layer2Data: { ciphertext: string; iv: string } | null = null;
-    if (layer2SessionRef.current?.established) {
-      layer2Data = layer2Encrypt(layer2SessionRef.current, payload);
-    }
-
     try {
-      // Send with Layer 2 encryption if available
-      const requestBody = layer2Data
-        ? { layer2: true, ciphertext: layer2Data.ciphertext, iv: layer2Data.iv }
-        : JSON.parse(payload);
-      
+      // Send message (Layer 3 E2E encrypted content)
       await fetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+        body: payload,
       });
     } catch (error) {
       console.error("Error sending message:", error);
