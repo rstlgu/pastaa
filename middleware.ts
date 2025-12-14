@@ -5,6 +5,14 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const url = request.nextUrl.clone();
 
+  // Se siamo sul dominio principale e l'utente accede a /chat, redirect a chat.pastaa.io
+  if (!hostname.startsWith('chat.') && url.pathname.startsWith('/chat')) {
+    const chatUrl = new URL(request.url);
+    chatUrl.host = hostname.replace(/^(www\.)?/, 'chat.');
+    chatUrl.pathname = url.pathname.replace('/chat', '') || '/';
+    return NextResponse.redirect(chatUrl);
+  }
+
   // Se il dominio è chat.pastaa.io, reindirizza a /chat
   if (hostname.startsWith('chat.')) {
     // Se è già su /chat, non fare nulla
