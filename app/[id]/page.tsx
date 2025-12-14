@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Copy, Share2, Users, X, Clock } from "lucide-react";
+import { Check, Loader2, Copy, Share2, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
 import { PastaLogo } from "@/components/pasta-logo";
@@ -179,7 +179,6 @@ export default function PublicPageEditor() {
   const [showUsersSheet, setShowUsersSheet] = useState(false);
   const [showExpirationModal, setShowExpirationModal] = useState(false);
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<number>(24 * 60 * 60 * 1000); // Default 24h in ms
   const [isCreator, setIsCreator] = useState(false);
   const creatorKeyRef = useRef<string>(`creator-${pageId}`);
   const lastSavedContentRef = useRef<string>("");
@@ -305,8 +304,8 @@ export default function PublicPageEditor() {
         body: JSON.stringify({ 
           id: pageId, 
           content: contentToSave,
-          // Invia expiresIn solo quando la pagina è nuova
-          ...(!pageExists ? { expiresIn: selectedDuration } : {}),
+          // Invia expiresIn solo quando la pagina è nuova (default 24h)
+          ...(!pageExists ? { expiresIn: 24 * 60 * 60 * 1000 } : {}),
         }),
       });
 
@@ -345,7 +344,7 @@ export default function PublicPageEditor() {
     } finally {
       setIsSaving(false);
     }
-  }, [contentDocs, contentCode, pageId, pageExists, selectedDuration]);
+  }, [contentDocs, contentCode, pageId, pageExists]);
 
   // Auto-save ogni 3 secondi dopo modifiche
   useEffect(() => {
@@ -1002,7 +1001,6 @@ export default function PublicPageEditor() {
                           <button
                             key={option.value}
                             onClick={async () => {
-                              const newExpiresAt = new Date(Date.now() + option.value);
                               try {
                                 const response = await fetch('/api/public-page', {
                                   method: 'POST',
