@@ -130,7 +130,6 @@ export const translations = {
     hours: 'ore',
     minute: 'minuto',
     minutes: 'minuti',
-    shareDescription: 'Condividi il link con chi vuoi',
     
     // Homepage
     heroTitle: 'Condivisione Testo Sicura',
@@ -275,7 +274,6 @@ export const translations = {
     hours: 'hours',
     minute: 'minute',
     minutes: 'minutes',
-    shareDescription: 'Share the link with anyone',
     
     // Homepage
     heroTitle: 'Secure Text Sharing',
