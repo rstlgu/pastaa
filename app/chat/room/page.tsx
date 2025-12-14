@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Lock, LogOut, Copy, Check, Shield } from "lucide-react";
+import { Users, Lock, LogOut, Shield } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import Link from "next/link";
@@ -48,7 +48,6 @@ function ChatRoomContent() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const [showMembers, setShowMembers] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [channelHash, setChannelHash] = useState("");
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
 
@@ -98,8 +97,19 @@ function ChatRoomContent() {
   const [isReady, setIsReady] = useState(false);
 
   // Initialize user ID and password from sessionStorage (client-side only)
+  // Prevent direct URL access - must go through login page
   useEffect(() => {
     if (typeof window === "undefined" || !channelName) return;
+    
+    // Check if user came through login page (password key must exist in sessionStorage)
+    const passwordKey = `chat-pwd-${channelName}`;
+    const hasLoggedIn = sessionStorage.getItem(passwordKey) !== null;
+    
+    if (!hasLoggedIn || !username || username === "Anonymous") {
+      // Redirect to login page
+      router.push("/chat");
+      return;
+    }
     
     // Get or create user ID - use channel-specific ID to avoid conflicts
     const storageKey = `chat-userId-${channelName}`;
@@ -111,10 +121,10 @@ function ChatRoomContent() {
     myIdRef.current = id;
     
     // Get channel password
-    channelPasswordRef.current = sessionStorage.getItem(`chat-pwd-${channelName}`) || "";
+    channelPasswordRef.current = sessionStorage.getItem(passwordKey) || "";
     
     setIsReady(true);
-  }, [channelName]);
+  }, [channelName, username, router]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -426,13 +436,6 @@ function ChatRoomContent() {
     }
   }, [inputMessage, isConnected, username, channelHash, getGroupKey]);
 
-  const copyChannelLink = async () => {
-    const link = `${window.location.origin}/chat/room?channel=${encodeURIComponent(channelName)}&user=`;
-    await navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const leaveChannel = async () => {
     if (channelHash) {
       await fetch("/api/chat/leave", {
@@ -489,14 +492,6 @@ function ChatRoomContent() {
             >
               <Users className="h-4 w-4" />
               <span>{membersArray.length + 1}</span>
-            </button>
-
-            <button
-              onClick={copyChannelLink}
-              className="p-2 rounded-md hover:bg-muted transition-colors"
-              title="Copy invite link"
-            >
-              {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </button>
 
             <button

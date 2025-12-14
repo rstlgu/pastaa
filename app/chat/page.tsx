@@ -29,9 +29,8 @@ export default function ChatHome() {
       user: username.trim(),
     });
     
-    if (channelPassword) {
-      sessionStorage.setItem(`chat-pwd-${channelName.trim()}`, channelPassword);
-    }
+    // Always save password (even if empty) to mark that user went through login
+    sessionStorage.setItem(`chat-pwd-${channelName.trim()}`, channelPassword);
     
     router.push(`/chat/room?${params.toString()}`);
   };
