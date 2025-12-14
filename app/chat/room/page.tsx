@@ -646,8 +646,8 @@ function ChatRoomContent() {
                 <h3 className="font-medium mb-3">Members ({membersArray.length + 1})</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">
-                      {username.charAt(0).toUpperCase()}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${getUserColor(username)}`}>
+                      {getInitials(username)}
                     </div>
                     <span className="text-sm font-medium">{username}</span>
                     <span className="text-xs text-muted-foreground">(you)</span>
@@ -655,8 +655,8 @@ function ChatRoomContent() {
 
                   {membersArray.map((member) => (
                     <div key={member.odiceId} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
-                        {member.username.charAt(0).toUpperCase()}
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${getUserColor(member.username)}`}>
+                        {getInitials(member.username)}
                       </div>
                       <span className="text-sm">{member.username}</span>
                     </div>
@@ -689,8 +689,8 @@ function ChatRoomContent() {
               <h3 className="font-medium mb-4">Members ({membersArray.length + 1})</h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold">
-                    {username.charAt(0).toUpperCase()}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${getUserColor(username)}`}>
+                    {getInitials(username)}
                   </div>
                   <div>
                     <span className="font-medium">{username}</span>
@@ -699,8 +699,8 @@ function ChatRoomContent() {
                 </div>
                 {membersArray.map((member) => (
                   <div key={member.odiceId} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold">
-                      {member.username.charAt(0).toUpperCase()}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${getUserColor(member.username)}`}>
+                      {getInitials(member.username)}
                     </div>
                     <span className="font-medium">{member.username}</span>
                   </div>
