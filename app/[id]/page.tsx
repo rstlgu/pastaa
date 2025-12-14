@@ -177,8 +177,11 @@ export default function PublicPageEditor() {
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [showUsersSheet, setShowUsersSheet] = useState(false);
+  const [showExpirationModal, setShowExpirationModal] = useState(false);
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(24 * 60 * 60 * 1000); // Default 24h in ms
+  const [isCreator, setIsCreator] = useState(false);
+  const creatorKeyRef = useRef<string>(`creator-${pageId}`);
   const lastSavedContentRef = useRef<string>("");
   const isLocalChangeRef = useRef(false);
   const lastSyncTimeRef = useRef<string>("");
@@ -256,6 +259,11 @@ export default function PublicPageEditor() {
           if (data.expiresAt) {
             setExpiresAt(new Date(data.expiresAt));
           }
+          // Controlla se l'utente è il creatore
+          if (typeof window !== 'undefined') {
+            const creatorFlag = sessionStorage.getItem(creatorKeyRef.current);
+            setIsCreator(creatorFlag === 'true');
+          }
         } else {
           // Nessun contenuto, pagina nuova
           setPageExists(data.exists || false);
@@ -311,6 +319,11 @@ export default function PublicPageEditor() {
         }
         setSaved(true);
         setSaveError(false);
+        // Se la pagina non esisteva prima, l'utente corrente è il creatore
+        if (!pageExists && typeof window !== 'undefined') {
+          sessionStorage.setItem(creatorKeyRef.current, 'true');
+          setIsCreator(true);
+        }
         setPageExists(true);
         // Mostra il testo "Salvato" per 2 secondi
         setTimeout(() => setSaved(false), 2000);
@@ -742,6 +755,41 @@ export default function PublicPageEditor() {
                     </div>
                   </div>
                 )}
+                
+                {/* Expiration Timer Icon */}
+                {pageExists && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setShowExpirationModal(true)}
+                        className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors relative"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-muted-foreground"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        {expiresAt && (
+                          <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('contentDuration')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                
                 <GitHubBadge />
                 <ThemeToggle />
               </div>
@@ -873,62 +921,6 @@ export default function PublicPageEditor() {
                     )}
                   </button>
                 </div>
-
-                {/* Duration Selection */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{t('contentDuration')}</span>
-                  </div>
-                  
-                  {expiresAt ? (
-                    <div className="bg-muted/50 rounded-lg p-3 border">
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">{t('expiresIn')}: </span>
-                        <span className="font-medium">
-                          {(() => {
-                            const diff = expiresAt.getTime() - Date.now();
-                            if (diff <= 0) return t('expired');
-                            const hours = Math.floor(diff / (1000 * 60 * 60));
-                            const days = Math.floor(hours / 24);
-                            if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')}`;
-                            if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
-                            const minutes = Math.floor(diff / (1000 * 60));
-                            return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
-                          })()}
-                        </span>
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { label: t('duration1Hour'), value: 1 * 60 * 60 * 1000 },
-                        { label: t('duration6Hours'), value: 6 * 60 * 60 * 1000 },
-                        { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
-                        { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
-                        { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setSelectedDuration(option.value)}
-                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                            selectedDuration === option.value
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted hover:bg-muted/80 text-foreground'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {!expiresAt && (
-                    <p className="text-xs text-muted-foreground">
-                      {t('contentDurationDescription')}
-                    </p>
-                  )}
-                </div>
               </div>
 
               <AlertDialogFooter>
@@ -941,6 +933,121 @@ export default function PublicPageEditor() {
             </AlertDialogContent>
           </AlertDialog>
         )}
+
+        {/* Expiration Modal */}
+        <AlertDialog open={showExpirationModal} onOpenChange={setShowExpirationModal}>
+          <AlertDialogContent className="max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-primary"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                {t('expirationSettings')}
+              </AlertDialogTitle>
+            </AlertDialogHeader>
+            
+            <div className="space-y-4">
+              {expiresAt ? (
+                <>
+                  {/* Data scadenza */}
+                  <div className="bg-muted rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t('expirationDate')}</span>
+                      <span className="text-sm font-medium">
+                        {expiresAt.toLocaleDateString()} {expiresAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t('timeRemaining')}</span>
+                      <span className="text-sm font-medium text-primary">
+                        {(() => {
+                          const diff = expiresAt.getTime() - Date.now();
+                          if (diff <= 0) return t('expired');
+                          const hours = Math.floor(diff / (1000 * 60 * 60));
+                          const days = Math.floor(hours / 24);
+                          const remainingHours = hours % 24;
+                          if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')} ${remainingHours > 0 ? `${remainingHours}h` : ''}`;
+                          if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
+                          const minutes = Math.floor(diff / (1000 * 60));
+                          return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cambia scadenza - solo per il creatore */}
+                  {isCreator ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">{t('changeExpiration')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { label: t('duration1Hour'), value: 1 * 60 * 60 * 1000 },
+                          { label: t('duration6Hours'), value: 6 * 60 * 60 * 1000 },
+                          { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
+                          { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
+                          { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={async () => {
+                              const newExpiresAt = new Date(Date.now() + option.value);
+                              try {
+                                const response = await fetch('/api/public-page', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                    id: pageId, 
+                                    content: JSON.stringify({ docs: contentDocs, code: contentCode }),
+                                    updateExpiration: option.value,
+                                  }),
+                                });
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  if (data.expiresAt) {
+                                    setExpiresAt(new Date(data.expiresAt));
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Errore aggiornamento scadenza:', error);
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-muted hover:bg-primary hover:text-primary-foreground"
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      {t('onlyCreatorCanChange')}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="bg-muted rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground">{t('noExpiration')}</p>
+                </div>
+              )}
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogAction>{t('close')}</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Share Bottom Sheet - Mobile Only */}
         <AnimatePresence>
@@ -995,61 +1102,6 @@ export default function PublicPageEditor() {
                           <Copy className="h-5 w-5" />
                         )}
                       </button>
-                    </div>
-
-                    {/* Duration Selection - Mobile */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{t('contentDuration')}</span>
-                      </div>
-                      
-                      {expiresAt ? (
-                        <div className="bg-muted/50 rounded-lg p-3 border">
-                          <p className="text-sm">
-                            <span className="text-muted-foreground">{t('expiresIn')}: </span>
-                            <span className="font-medium">
-                              {(() => {
-                                const diff = expiresAt.getTime() - Date.now();
-                                if (diff <= 0) return t('expired');
-                                const hours = Math.floor(diff / (1000 * 60 * 60));
-                                const days = Math.floor(hours / 24);
-                                if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')}`;
-                                if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
-                                const minutes = Math.floor(diff / (1000 * 60));
-                                return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
-                              })()}
-                            </span>
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex flex-wrap gap-2">
-                            {[
-                              { label: t('duration1Hour'), value: 1 * 60 * 60 * 1000 },
-                              { label: t('duration6Hours'), value: 6 * 60 * 60 * 1000 },
-                              { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
-                              { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
-                              { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
-                            ].map((option) => (
-                              <button
-                                key={option.value}
-                                onClick={() => setSelectedDuration(option.value)}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                  selectedDuration === option.value
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted hover:bg-muted/80 text-foreground'
-                                }`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {t('contentDurationDescription')}
-                          </p>
-                        </>
-                      )}
                     </div>
 
                     {/* Action Buttons */}

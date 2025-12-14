@@ -130,6 +130,14 @@ export const translations = {
     hours: 'ore',
     minute: 'minuto',
     minutes: 'minuti',
+    expirationSettings: 'Scadenza Contenuto',
+    expirationDate: 'Data scadenza',
+    timeRemaining: 'Tempo rimanente',
+    changeExpiration: 'Cambia scadenza',
+    onlyCreatorCanChange: 'Solo chi ha creato la pagina può modificare la scadenza',
+    noExpiration: 'Nessuna scadenza impostata',
+    close: 'Chiudi',
+    save: 'Salva',
     
     // Homepage
     heroTitle: 'Condivisione Testo Sicura',
@@ -274,6 +282,14 @@ export const translations = {
     hours: 'hours',
     minute: 'minute',
     minutes: 'minutes',
+    expirationSettings: 'Content Expiration',
+    expirationDate: 'Expiration date',
+    timeRemaining: 'Time remaining',
+    changeExpiration: 'Change expiration',
+    onlyCreatorCanChange: 'Only the page creator can change the expiration',
+    noExpiration: 'No expiration set',
+    close: 'Close',
+    save: 'Save',
     
     // Homepage
     heroTitle: 'Secure Text Sharing',

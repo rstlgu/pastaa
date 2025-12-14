@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 // POST - Crea o aggiorna una pagina pubblica
 export async function POST(request: NextRequest) {
   try {
-    const { id, content, expiresIn } = await request.json();
+    const { id, content, expiresIn, updateExpiration } = await request.json();
 
     if (!id || typeof content !== 'string') {
       return NextResponse.json(
@@ -110,6 +110,12 @@ export async function POST(request: NextRequest) {
     if (expiresIn && typeof expiresIn === 'number' && expiresIn > 0) {
       expiresAt = new Date(Date.now() + expiresIn);
     }
+    
+    // Calcola nuova scadenza se richiesto aggiornamento
+    let newExpiresAt: Date | null = null;
+    if (updateExpiration && typeof updateExpiration === 'number' && updateExpiration > 0) {
+      newExpiresAt = new Date(Date.now() + updateExpiration);
+    }
 
     try {
       // Prima controlla se la pagina esiste già
@@ -121,8 +127,12 @@ export async function POST(request: NextRequest) {
         where: { id },
         update: { 
           content,
-          // Aggiorna expiresAt solo se è la prima volta che viene impostato o se viene fornito
-          ...(expiresAt !== null && !existingPage?.expiresAt ? { expiresAt } : {}),
+          // Aggiorna expiresAt se richiesto (updateExpiration) o se è la prima volta
+          ...(newExpiresAt !== null 
+            ? { expiresAt: newExpiresAt } 
+            : expiresAt !== null && !existingPage?.expiresAt 
+              ? { expiresAt } 
+              : {}),
         },
         create: { 
           id, 
