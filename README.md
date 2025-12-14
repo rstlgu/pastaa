@@ -2,14 +2,15 @@
   <br />
   <img src="public/logo.svg" alt="Pastaa Logo" width="80" height="80" />
   <h1>Pastaa</h1>
-  <p><strong>Secure Text Sharing with End-to-End Encryption</strong></p>
+  <p><strong>Secure Text Sharing & Encrypted Chat</strong></p>
   <br />
   <p>
     <a href="#features">Features</a> •
+    <a href="#chat">Chat</a> •
     <a href="#technology-stack">Tech Stack</a> •
     <a href="#quick-start">Quick Start</a> •
-    <a href="#security">Security</a> •
-    <a href="#contributing">Contributing</a>
+    <a href="#docker">Docker</a> •
+    <a href="#security">Security</a>
   </p>
   <br />
 </div>
@@ -18,14 +19,61 @@
 
 ## Features
 
-- **End-to-End Encryption** — AES-GCM 256-bit encryption, keys never leave your browser
+### Send (Encrypted Paste)
+- **End-to-End Encryption** — AES-GCM 256-bit, keys never leave your browser
 - **Zero Registration** — No accounts, no tracking, no cookies
 - **Burn After Reading** — Automatic deletion after first view
-- **Custom Expiry** — Set content lifetime: 1 hour to 30 days, or never
 - **Password Protection** — Optional second layer of security
-- **Real-time Collaboration** — Share pages with live presence indicators
+
+### Share (Real-time Collaboration)
+- **Live Collaboration** — Multiple users editing simultaneously
+- **Presence Indicators** — See who's viewing in real-time
+- **Custom Expiry** — Set content lifetime: 1 hour to 30 days, or never
 - **Code Editor** — Syntax highlighting for 12+ languages
-- **Modern UI** — Dark/light themes, smooth animations, mobile-first design
+
+### Chat (Encrypted Group Chat)
+- **Triple Encryption** — TLS + AES-256-GCM + ChaCha20-Poly1305
+- **No Storage** — Messages are never stored on the server
+- **Channel Password** — Encryption key derived from password you choose
+- **Real-time** — Instant message delivery via WebSockets
+- **Zero Knowledge** — Server cannot read your messages
+
+---
+
+## Chat
+
+Pastaa Chat is inspired by [ChatCrypt](https://www.chatcrypt.com) and provides secure group messaging with end-to-end encryption.
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      LAYER 1: TLS                               │
+│  Browser ←──────────── HTTPS ──────────────→ Server             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                    LAYER 2: Transport                           │
+│  WebSocket connection via Pusher (encrypted channel)            │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                LAYER 3: End-to-End (E2E)                        │
+│  ChaCha20-Poly1305 encryption                                   │
+│  Key = derive(channel_password)                                 │
+│  Only users with the same password can decrypt                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Chat Features
+
+| Feature | Description |
+|---------|-------------|
+| Channel-based | Create or join channels by name |
+| Password encryption | Messages encrypted with channel password |
+| No persistence | Messages exist only during session |
+| Telegram-style avatars | Colored initials for each user |
+| Real-time presence | See who's in the channel |
 
 ---
 
@@ -37,10 +85,11 @@
 | Language | TypeScript |
 | UI | React, Tailwind CSS, Shadcn UI |
 | Animations | Framer Motion |
-| Encryption | Web Crypto API |
+| Encryption | Web Crypto API, @noble/ciphers |
 | Database | PostgreSQL + Prisma |
 | Editor | CodeMirror, TipTap |
-| Deployment | Vercel |
+| Real-time | Pusher (WebSockets) |
+| Deployment | Vercel, Docker |
 
 ---
 
@@ -48,8 +97,9 @@
 
 ### Prerequisites
 
-- Node.js 18+
-- PostgreSQL database (or use Supabase/Vercel Postgres)
+- Node.js 20+
+- PostgreSQL database
+- Pusher account (for Chat feature)
 
 ### Installation
 
@@ -63,10 +113,10 @@ npm install
 
 # Configure environment
 cp env.example .env
-# Edit .env with your database URL
+# Edit .env with your settings
 
 # Setup database
-npm run db:push
+npx prisma db push
 
 # Start development server
 npm run dev
@@ -74,18 +124,120 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+### Environment Variables
+
+```env
+# Database (required)
+DATABASE_URL="postgresql://user:password@host:5432/database"
+
+# Pusher (required for Chat)
+PUSHER_APP_ID="your_app_id"
+PUSHER_SECRET="your_secret"
+NEXT_PUBLIC_PUSHER_KEY="your_key"
+NEXT_PUBLIC_PUSHER_CLUSTER="eu"
+```
+
+---
+
+## Docker
+
+### Quick Start with Docker Compose
+
+```bash
+# Clone the repository
+git clone https://github.com/rstlgu/pastaa.git
+cd pastaa
+
+# Create .env file with Pusher credentials (for Chat)
+cat > .env << EOF
+PUSHER_APP_ID=your_app_id
+PUSHER_SECRET=your_secret
+NEXT_PUBLIC_PUSHER_KEY=your_key
+NEXT_PUBLIC_PUSHER_CLUSTER=eu
+EOF
+
+# Start the stack
+docker-compose up -d
+
+# Run migrations
+docker-compose run --rm migrate
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000)
+
+### Docker Compose Services
+
+| Service | Description | Port |
+|---------|-------------|------|
+| `app` | Next.js application | 3000 |
+| `db` | PostgreSQL database | 5432 (internal) |
+| `migrate` | One-time migration job | - |
+
+### Build Docker Image Manually
+
+```bash
+# Build the image
+docker build -t pastaa .
+
+# Run with external database
+docker run -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:pass@host:5432/db" \
+  -e PUSHER_APP_ID="your_app_id" \
+  -e PUSHER_SECRET="your_secret" \
+  -e NEXT_PUBLIC_PUSHER_KEY="your_key" \
+  -e NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
+  pastaa
+```
+
+### Self-Hosting Requirements
+
+| Component | Required | Notes |
+|-----------|----------|-------|
+| PostgreSQL | Yes | For storing encrypted pastes and share pages |
+| Pusher | Only for Chat | Free tier available at pusher.com |
+| Redis | No | Not required |
+| Object Storage | No | All data stored in database |
+
+### What Works Without Pusher
+
+| Feature | Without Pusher |
+|---------|----------------|
+| Send (Encrypted Paste) | ✅ Works |
+| View Paste | ✅ Works |
+| Share (Collaboration) | ✅ Works (presence disabled) |
+| Chat | ❌ Requires Pusher |
+
 ---
 
 ## Security
 
-### How It Works
+### Encryption Details
+
+| Feature | Algorithm | Key Size |
+|---------|-----------|----------|
+| Send (Paste) | AES-GCM | 256-bit |
+| Chat Messages | ChaCha20-Poly1305 | 256-bit |
+| Key Derivation | Custom hash function | - |
+
+### Security Guarantees
+
+| Feature | Status |
+|---------|--------|
+| Keys transmitted to server | Never |
+| Server can read your content | No |
+| Chat messages stored | Never |
+| User tracking | None |
+| Cookies | None |
+| Automatic expiry deletion | Yes |
+
+### Zero Knowledge Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         YOUR BROWSER                             │
 ├─────────────────────────────────────────────────────────────────┤
-│  1. Generate AES-256 key                                        │
-│  2. Encrypt text with key                                       │
+│  1. Generate encryption key                                      │
+│  2. Encrypt content with key                                     │
 │  3. Send encrypted data to server                               │
 │  4. Key stays in URL fragment (#) — never sent to server        │
 └─────────────────────────────────────────────────────────────────┘
@@ -96,36 +248,8 @@ Open [http://localhost:3000](http://localhost:3000)
 ├─────────────────────────────────────────────────────────────────┤
 │  • Receives only encrypted content                              │
 │  • Cannot decrypt without the key                               │
-│  • Zero knowledge architecture                                  │
+│  • Chat: only relays encrypted messages                         │
 └─────────────────────────────────────────────────────────────────┘
-```
-
-### Security Guarantees
-
-| Feature | Status |
-|---------|--------|
-| Key transmitted to server | Never |
-| Server can read your content | No |
-| Encryption standard | AES-GCM 256-bit |
-| IV (Initialization Vector) | Random per paste |
-| User tracking | None |
-| Cookies | None |
-| Automatic expiry deletion | Yes |
-
----
-
-## Configuration
-
-Create a `.env` file in the root directory:
-
-```env
-DATABASE_URL="postgresql://user:password@host:5432/database"
-```
-
-For local development with SQLite:
-
-```env
-DATABASE_URL="file:./dev.db"
 ```
 
 ---
