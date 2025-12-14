@@ -755,17 +755,19 @@ export default function PublicPageEditor() {
                   </div>
                 )}
                 
-                {/* Expiration Timer Icon */}
+                {/* Expiration Timer Icon - styled like GitHub badge */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setShowExpirationModal(true)}
-                      className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors relative"
+                      className={`inline-flex items-center justify-center rounded-full border-2 ${
+                        expiresAt ? 'border-primary' : 'border-muted-foreground/50'
+                      } bg-background hover:bg-muted h-10 w-10 transition-colors relative`}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -777,9 +779,6 @@ export default function PublicPageEditor() {
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
-                      {expiresAt && (
-                        <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
-                      )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -787,7 +786,10 @@ export default function PublicPageEditor() {
                   </TooltipContent>
                 </Tooltip>
                 
-                <GitHubBadge />
+                {/* GitHub Badge - hidden on mobile */}
+                <div className="hidden md:block">
+                  <GitHubBadge />
+                </div>
                 <ThemeToggle />
               </div>
             </div>
@@ -918,6 +920,59 @@ export default function PublicPageEditor() {
                     )}
                   </button>
                 </div>
+
+                {/* Expiration Info */}
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3 border">
+                  <div className="flex items-center gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={expiresAt ? "text-primary" : "text-muted-foreground"}
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span className="text-sm">
+                      {expiresAt ? (
+                        <>
+                          <span className="text-muted-foreground">{t('expiresIn')}: </span>
+                          <span className="font-medium">
+                            {(() => {
+                              const diff = expiresAt.getTime() - Date.now();
+                              if (diff <= 0) return t('expired');
+                              const hours = Math.floor(diff / (1000 * 60 * 60));
+                              const days = Math.floor(hours / 24);
+                              if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')}`;
+                              if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
+                              const minutes = Math.floor(diff / (1000 * 60));
+                              return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
+                            })()}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">{t('never')}</span>
+                      )}
+                    </span>
+                  </div>
+                  {isCreator && (
+                    <button
+                      onClick={() => {
+                        setShowShareSheet(false);
+                        setTimeout(() => setShowExpirationModal(true), 150);
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {t('changeExpiration')}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <AlertDialogFooter>
@@ -995,6 +1050,7 @@ export default function PublicPageEditor() {
                           { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
                           { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
                           { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
+                          { label: t('never'), value: -1 },
                         ].map((option) => (
                           <button
                             key={option.value}
@@ -1013,13 +1069,19 @@ export default function PublicPageEditor() {
                                   const data = await response.json();
                                   if (data.expiresAt) {
                                     setExpiresAt(new Date(data.expiresAt));
+                                  } else {
+                                    setExpiresAt(null);
                                   }
                                 }
                               } catch (error) {
                                 console.error('Errore aggiornamento scadenza:', error);
                               }
                             }}
-                            className="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-muted hover:bg-primary hover:text-primary-foreground"
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                              option.value === -1 
+                                ? 'bg-muted/50 hover:bg-destructive/20 hover:text-destructive border border-dashed border-muted-foreground/30' 
+                                : 'bg-muted hover:bg-primary hover:text-primary-foreground'
+                            }`}
                           >
                             {option.label}
                           </button>
@@ -1034,8 +1096,9 @@ export default function PublicPageEditor() {
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-muted rounded-lg p-4 text-center">
-                    <p className="text-sm text-muted-foreground">{t('noExpiration')}</p>
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-center">
+                    <p className="text-sm font-medium text-primary">{t('defaultExpiration')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('contentDurationDescription')}</p>
                   </div>
                   
                   {/* Imposta scadenza - per pagine senza scadenza */}
@@ -1048,6 +1111,7 @@ export default function PublicPageEditor() {
                         { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
                         { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
                         { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
+                        { label: t('never'), value: -1 },
                       ].map((option) => (
                         <button
                           key={option.value}
@@ -1066,6 +1130,8 @@ export default function PublicPageEditor() {
                                 const data = await response.json();
                                 if (data.expiresAt) {
                                   setExpiresAt(new Date(data.expiresAt));
+                                } else {
+                                  setExpiresAt(null);
                                 }
                                 // Imposta come creatore se ha impostato la scadenza
                                 if (typeof window !== 'undefined') {
@@ -1077,7 +1143,11 @@ export default function PublicPageEditor() {
                               console.error('Errore impostazione scadenza:', error);
                             }
                           }}
-                          className="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-muted hover:bg-primary hover:text-primary-foreground"
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                            option.value === -1 
+                              ? 'bg-muted/50 hover:bg-destructive/20 hover:text-destructive border border-dashed border-muted-foreground/30' 
+                              : 'bg-muted hover:bg-primary hover:text-primary-foreground'
+                          }`}
                         >
                           {option.label}
                         </button>
@@ -1147,6 +1217,63 @@ export default function PublicPageEditor() {
                           <Copy className="h-5 w-5" />
                         )}
                       </button>
+                    </div>
+
+                    {/* Expiration Info - Mobile */}
+                    <div className="flex items-center justify-between bg-muted/50 rounded-lg p-4 border">
+                      <div className="flex items-center gap-3">
+                        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                          expiresAt ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 bg-muted'
+                        }`}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={expiresAt ? "text-primary" : "text-muted-foreground"}
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {expiresAt ? (
+                              <>
+                                {(() => {
+                                  const diff = expiresAt.getTime() - Date.now();
+                                  if (diff <= 0) return t('expired');
+                                  const hours = Math.floor(diff / (1000 * 60 * 60));
+                                  const days = Math.floor(hours / 24);
+                                  if (days > 0) return `${days} ${days === 1 ? t('day') : t('days')}`;
+                                  if (hours > 0) return `${hours} ${hours === 1 ? t('hour') : t('hours')}`;
+                                  const minutes = Math.floor(diff / (1000 * 60));
+                                  return `${minutes} ${minutes === 1 ? t('minute') : t('minutes')}`;
+                                })()}
+                              </>
+                            ) : (
+                              t('never')
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{t('contentDuration')}</p>
+                        </div>
+                      </div>
+                      {isCreator && (
+                        <button
+                          onClick={() => {
+                            setShowShareSheet(false);
+                            setTimeout(() => setShowExpirationModal(true), 150);
+                          }}
+                          className="px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors"
+                        >
+                          {t('changeExpiration')}
+                        </button>
+                      )}
                     </div>
 
                     {/* Action Buttons */}

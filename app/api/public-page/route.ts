@@ -113,8 +113,14 @@ export async function POST(request: NextRequest) {
     
     // Calcola nuova scadenza se richiesto aggiornamento
     let newExpiresAt: Date | null = null;
-    if (updateExpiration && typeof updateExpiration === 'number' && updateExpiration > 0) {
-      newExpiresAt = new Date(Date.now() + updateExpiration);
+    let removeExpiration = false;
+    if (updateExpiration !== undefined && typeof updateExpiration === 'number') {
+      if (updateExpiration === -1) {
+        // -1 significa "mai" - rimuovi scadenza
+        removeExpiration = true;
+      } else if (updateExpiration > 0) {
+        newExpiresAt = new Date(Date.now() + updateExpiration);
+      }
     }
 
     try {
@@ -128,11 +134,13 @@ export async function POST(request: NextRequest) {
         update: { 
           content,
           // Aggiorna expiresAt se richiesto (updateExpiration) o se è la prima volta
-          ...(newExpiresAt !== null 
-            ? { expiresAt: newExpiresAt } 
-            : expiresAt !== null && !existingPage?.expiresAt 
-              ? { expiresAt } 
-              : {}),
+          ...(removeExpiration 
+            ? { expiresAt: null }
+            : newExpiresAt !== null 
+              ? { expiresAt: newExpiresAt } 
+              : expiresAt !== null && !existingPage?.expiresAt 
+                ? { expiresAt } 
+                : {}),
         },
         create: { 
           id, 
