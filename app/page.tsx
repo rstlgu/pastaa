@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Send, Share2, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock } from "lucide-react";
+import { Send, Share2, MessageSquare, Github, Lock, Code, FileText, Users, Zap, Smartphone, Shield, Server, Clock } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
@@ -155,6 +155,51 @@ export default function Home() {
                       </div>
                     </motion.div>
                   </Link>
+
+                  {/* Chat Button/Card */}
+                  <a href="https://chat.pastaa.io" className="w-full group">
+                    <motion.div
+                      whileHover={{ scale: 1.03, y: -4 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="relative w-full overflow-hidden"
+                    >
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      {/* Card content */}
+                      <div className="relative p-5 md:p-8 rounded-2xl border-2 border-primary/50 group-hover:border-primary bg-card/80 backdrop-blur-sm transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]">
+                        <div className="flex items-center gap-4 md:flex-col md:text-center md:gap-6">
+                          {/* Icon with animated ring */}
+                          <div className="relative">
+                            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-75" style={{ animationDuration: '2s' }} />
+                            <div className="relative p-3 md:p-5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full border border-primary/30 group-hover:border-primary transition-colors">
+                              <MessageSquare className="h-6 w-6 md:h-10 md:w-10 text-primary" />
+                            </div>
+                          </div>
+                          
+                          {/* Text */}
+                          <div className="flex-1 md:space-y-3">
+                            <h3 className="text-xl md:text-3xl font-bold font-righteous text-foreground group-hover:text-primary transition-colors">
+                              Chat
+                            </h3>
+                            <p className="hidden md:block text-base text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
+                              Secure group chat with triple encryption
+                            </p>
+                            <p className="md:hidden text-xs text-muted-foreground">
+                              E2E Group Chat
+                            </p>
+                          </div>
+                          
+                          {/* Arrow indicator - mobile only */}
+                          <div className="md:hidden">
+                            <svg className="h-5 w-5 text-primary/50 group-hover:text-primary group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </a>
                 </motion.div>
               </div>
 

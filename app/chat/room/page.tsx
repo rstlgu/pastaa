@@ -59,25 +59,28 @@ function ChatRoomContent() {
   const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
   const myKeysRef = useRef<Layer3Keys | null>(null);
   const layer2SessionRef = useRef<Layer2Session | null>(null);
-  
-  // Persist user ID in sessionStorage to prevent duplicates on refresh
-  const myIdRef = useRef<string>(
-    typeof window !== "undefined" 
-      ? (sessionStorage.getItem("chat-userId") || (() => {
-          const id = `user-${Math.random().toString(36).slice(2, 11)}`;
-          sessionStorage.setItem("chat-userId", id);
-          return id;
-        })())
-      : `user-${Math.random().toString(36).slice(2, 11)}`
-  );
+  const myIdRef = useRef<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelPasswordRef = useRef<string>("");
+  const isInitializedRef = useRef(false);
 
-  // Get channel password from sessionStorage
+  // Initialize user ID and password from sessionStorage (client-side only)
   useEffect(() => {
-    if (typeof window !== "undefined" && channelName) {
-      channelPasswordRef.current = sessionStorage.getItem(`chat-pwd-${channelName}`) || "";
+    if (typeof window === "undefined" || isInitializedRef.current) return;
+    
+    // Get or create user ID - use channel-specific ID to avoid conflicts
+    const storageKey = `chat-userId-${channelName}`;
+    let id = sessionStorage.getItem(storageKey);
+    if (!id) {
+      id = `user-${Math.random().toString(36).slice(2, 11)}`;
+      sessionStorage.setItem(storageKey, id);
     }
+    myIdRef.current = id;
+    
+    // Get channel password
+    channelPasswordRef.current = sessionStorage.getItem(`chat-pwd-${channelName}`) || "";
+    
+    isInitializedRef.current = true;
   }, [channelName]);
 
   // Scroll to bottom on new messages
@@ -108,6 +111,11 @@ function ChatRoomContent() {
   useEffect(() => {
     if (!channelName) {
       router.push("/chat");
+      return;
+    }
+
+    // Wait for initialization
+    if (!isInitializedRef.current || !myIdRef.current) {
       return;
     }
 
@@ -241,8 +249,22 @@ function ChatRoomContent() {
           return newMembers;
         });
 
+        // Respond with my info so the new member knows about me
+        if (myKeysRef.current) {
+          fetch("/api/chat/join", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              channelHash: hash,
+              userId: myIdRef.current,
+              username,
+              publicKey: bytesToHex(myKeysRef.current.publicKey),
+            }),
+          }).catch(console.error);
+        }
+
         setMessages((prev) => [...prev, {
-          id: `system-join-${data.userId}`,
+          id: `system-join-${data.userId}-${Date.now()}`,
           from: "system",
           fromUsername: "System",
           content: `${data.username} joined the channel`,
