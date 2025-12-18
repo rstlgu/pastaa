@@ -183,9 +183,10 @@ export default function PublicPageEditor() {
   const creatorKeyRef = useRef<string>(`creator-${pageId}`);
   const lastSavedContentRef = useRef<string>("");
   const isLocalChangeRef = useRef(false);
-  const lastSyncTimeRef = useRef<string>("");
   const previousContentRef = useRef<{ docs: string; code: string }>({ docs: '', code: '' });
   const codeMirrorViewRef = useRef<EditorView | null>(null);
+  const broadcastRef = useRef<((content: string, userId: string, editorMode: 'code' | 'docs') => Promise<void>) | null>(null);
+  const presenceUserIdRef = useRef<string>('');
 
   // Carica il contenuto della pagina
   useEffect(() => {
@@ -324,6 +325,12 @@ export default function PublicPageEditor() {
           setIsCreator(true);
         }
         setPageExists(true);
+        
+        // Broadcast update via Pusher agli altri utenti
+        if (broadcastRef.current && presenceUserIdRef.current) {
+          broadcastRef.current(contentToSave, presenceUserIdRef.current, editorMode);
+        }
+        
         // Mostra il testo "Salvato" per 2 secondi
         setTimeout(() => setSaved(false), 2000);
       } else {
@@ -344,7 +351,7 @@ export default function PublicPageEditor() {
     } finally {
       setIsSaving(false);
     }
-  }, [contentDocs, contentCode, pageId, pageExists]);
+  }, [contentDocs, contentCode, pageId, pageExists, editorMode]);
 
   // Auto-save ogni 3 secondi dopo modifiche
   useEffect(() => {
@@ -452,14 +459,28 @@ export default function PublicPageEditor() {
     return differences;
   };
 
+  // Sistema di presenza utenti
+  const presence = usePresence({
+    pageId,
+    enabled: !isLoading && pageExists,
+  });
+
+  // Aggiorna i ref quando cambiano
+  useEffect(() => {
+    presenceUserIdRef.current = presence.userId;
+  }, [presence.userId]);
+
   // Sincronizzazione in tempo reale
-  const handleRemoteUpdate = useCallback((content: string, updatedAt: string) => {
-    // Evita aggiornamenti se l'utente sta modificando localmente o se è lo stesso aggiornamento
-    if (isLocalChangeRef.current || updatedAt === lastSyncTimeRef.current) {
+  const handleRemoteUpdate = useCallback((content: string, remoteUserId: string) => {
+    // Evita aggiornamenti se è il proprio update
+    if (remoteUserId === presenceUserIdRef.current) {
       return;
     }
 
-    lastSyncTimeRef.current = updatedAt;
+    // Evita aggiornamenti se l'utente sta modificando localmente
+    if (isLocalChangeRef.current) {
+      return;
+    }
 
     try {
       const parsed = JSON.parse(content);
@@ -528,17 +549,16 @@ export default function PublicPageEditor() {
   }, [contentDocs, contentCode, editor, editorMode]);
 
   // Attiva sincronizzazione solo dopo il caricamento iniziale
-  useRealtimeSync({
+  const { broadcast } = useRealtimeSync({
     pageId,
     onUpdate: handleRemoteUpdate,
     enabled: !isLoading && pageExists,
   });
 
-  // Sistema di presenza utenti
-  const { users, sendCursor, sendSelection } = usePresence({
-    pageId,
-    enabled: !isLoading && pageExists,
-  });
+  // Aggiorna il ref quando broadcast cambia
+  useEffect(() => {
+    broadcastRef.current = broadcast;
+  }, [broadcast]);
 
   // Funzione per verificare se c'è contenuto nell'editor
   const hasContent = (mode: 'code' | 'docs') => {
@@ -710,13 +730,13 @@ export default function PublicPageEditor() {
               </div>
 
               {/* Avatar altri utenti - Mobile: sotto la navbar, Desktop: nella navbar */}
-              {users.length > 0 && (
+              {presence.users.length > 0 && (
                 <div 
                   className="md:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-b border-primary/20 px-4 py-2 flex items-center gap-2 cursor-pointer"
                   onClick={() => setShowUsersSheet(true)}
                 >
                   <AvatarGroup>
-                    {users.map((user) => (
+                    {presence.users.map((user) => (
                       <Avatar key={user.id}>
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>
@@ -726,17 +746,17 @@ export default function PublicPageEditor() {
                     ))}
                   </AvatarGroup>
                   <span className="text-xs text-muted-foreground">
-                    {users.length} {users.length === 1 ? 'utente' : 'utenti'} online
+                    {presence.users.length} {presence.users.length === 1 ? 'utente' : 'utenti'} online
                   </span>
                 </div>
               )}
 
               <div className="flex items-center gap-2">
                 {/* Avatar altri utenti - Desktop */}
-                {users.length > 0 && (
+                {presence.users.length > 0 && (
                   <div className="hidden md:flex items-center gap-2">
                     <div className="flex -space-x-2 *:data-[slot=avatar]:ring-background *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:grayscale mr-2">
-                      {users.map((user) => (
+                      {presence.users.map((user) => (
                         <Tooltip key={user.id}>
                           <TooltipTrigger asChild>
                             <Avatar className="cursor-pointer">
@@ -801,7 +821,7 @@ export default function PublicPageEditor() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className={`flex-1 flex flex-col md:container md:mx-auto md:px-4 md:py-6 ${users.length > 0 ? 'pt-14 md:pt-6' : ''}`}
+          className={`flex-1 flex flex-col md:container md:mx-auto md:px-4 md:py-6 ${presence.users.length > 0 ? 'pt-14 md:pt-6' : ''}`}
         >
           <div className="w-full flex-1 md:border-2 md:border-primary md:rounded-xl overflow-hidden bg-card flex flex-col min-h-0">
             <EditorToolbar 
@@ -815,8 +835,8 @@ export default function PublicPageEditor() {
             <div 
               className="flex-1 min-h-0 overflow-hidden relative"
               onMouseMove={(e) => {
-                if (sendCursor) {
-                  sendCursor(e.clientX, e.clientY);
+                if (presence.sendCursor) {
+                  presence.sendCursor(e.clientX, e.clientY);
                 }
               }}
             >
@@ -848,10 +868,10 @@ export default function PublicPageEditor() {
                         }
                         
                         // Traccia selezione per CodeMirror
-                        if (update.selectionSet && sendSelection && editorMode === 'code') {
+                        if (update.selectionSet && presence.sendSelection && editorMode === 'code') {
                           const selection = update.state.selection.main;
                           if (selection.from !== selection.to) {
-                            sendSelection(selection.from, selection.to);
+                            presence.sendSelection(selection.from, selection.to);
                           }
                         }
                       }),
@@ -1331,11 +1351,11 @@ export default function PublicPageEditor() {
         </AnimatePresence>
 
         {/* Cursori remoti */}
-        <RemoteCursors users={users} />
+        <RemoteCursors users={presence.users} />
 
         {/* Selezioni remote */}
         <RemoteSelections 
-          users={users} 
+          users={presence.users} 
           editorMode={editorMode}
           content={editorMode === 'code' ? contentCode : contentDocs}
         />
@@ -1373,7 +1393,7 @@ export default function PublicPageEditor() {
                     <div className="flex-1">
                       <h2 className="text-xl font-bold">Utenti Online</h2>
                       <p className="text-xs text-muted-foreground">
-                        {users.length} {users.length === 1 ? 'utente' : 'utenti'} connesso{users.length > 1 ? 'i' : ''}
+                        {presence.users.length} {presence.users.length === 1 ? 'utente' : 'utenti'} connesso{presence.users.length > 1 ? 'i' : ''}
                       </p>
                     </div>
                     <button
@@ -1386,7 +1406,7 @@ export default function PublicPageEditor() {
 
                   {/* Users List */}
                   <div className="space-y-3">
-                    {users.map((user) => (
+                    {presence.users.map((user) => (
                       <div
                         key={user.id}
                         className="flex items-center gap-3 p-3 rounded-lg border-2 border-border hover:bg-muted/50 transition-colors"

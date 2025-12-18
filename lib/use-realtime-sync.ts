@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from 'react';
+import { getPusherClient } from './pusher';
 
-interface SyncMessage {
-  type: 'update' | 'error';
-  content?: string;
-  updatedAt?: string;
-  message?: string;
+interface ContentUpdate {
+  content: string;
+  userId: string;
+  editorMode: 'code' | 'docs';
+  timestamp: number;
 }
 
 interface UseRealtimeSyncOptions {
   pageId: string;
-  onUpdate: (content: string, updatedAt: string) => void;
+  onUpdate: (content: string, userId: string) => void;
   enabled?: boolean;
 }
 
@@ -20,52 +21,55 @@ export function useRealtimeSync({
   onUpdate, 
   enabled = true 
 }: UseRealtimeSyncOptions) {
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const lastUpdateRef = useRef<string>('');
+  const channelRef = useRef<ReturnType<ReturnType<typeof getPusherClient>['subscribe']> | null>(null);
+  const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);
 
   useEffect(() => {
     if (!enabled || !pageId) return;
 
-    // Crea connessione SSE
-    const eventSource = new EventSource(`/api/public-page/${pageId}/sync`);
-    eventSourceRef.current = eventSource;
+    // Ottieni istanza Pusher
+    const pusher = getPusherClient();
+    pusherRef.current = pusher;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data: SyncMessage = JSON.parse(event.data);
-        
-        if (data.type === 'update' && data.content && data.updatedAt) {
-          // Evita aggiornamenti duplicati
-          if (data.updatedAt !== lastUpdateRef.current) {
-            lastUpdateRef.current = data.updatedAt;
-            onUpdate(data.content, data.updatedAt);
-          }
-        } else if (data.type === 'error') {
-          console.error('Errore sincronizzazione:', data.message);
-        }
-      } catch (error) {
-        console.error('Errore parsing messaggio SSE:', error);
-      }
-    };
+    // Subscribe al canale della pagina
+    const channel = pusher.subscribe(`page-${pageId}`);
+    channelRef.current = channel;
 
-    eventSource.onerror = (error) => {
-      console.error('Errore EventSource:', error);
-      // Riconnessione automatica gestita da EventSource
-    };
+    // Listener per aggiornamenti contenuto
+    channel.bind('content-update', (data: ContentUpdate) => {
+      onUpdate(data.content, data.userId);
+    });
 
     return () => {
-      eventSource.close();
-      eventSourceRef.current = null;
+      if (channelRef.current) {
+        channelRef.current.unbind_all();
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
     };
   }, [pageId, enabled, onUpdate]);
 
   const disconnect = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+    if (channelRef.current) {
+      channelRef.current.unbind_all();
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
     }
   }, []);
 
-  return { disconnect };
-}
+  const broadcast = useCallback(async (content: string, userId: string, editorMode: 'code' | 'docs') => {
+    if (!pageId) return;
 
+    try {
+      await fetch(`/api/public-page/${pageId}/broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, userId, editorMode }),
+      });
+    } catch (error) {
+      console.error('Errore broadcast:', error);
+    }
+  }, [pageId]);
+
+  return { disconnect, broadcast };
+}
