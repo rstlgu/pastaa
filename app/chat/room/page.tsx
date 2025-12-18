@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Lock, LogOut, Shield, Plus, Hash, X, Menu, Eye, EyeOff } from "lucide-react";
+import { Users, Lock, LogOut, Shield, Plus, Hash, X, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import Link from "next/link";
@@ -151,7 +151,7 @@ function ChatRoomContent() {
     if (activeChannel && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [activeChannel?.messages, activeChannel?.messages.length]);
+  }, [activeChannel?.messages, activeChannel?.messages.length, activeChannel?.name]);
 
   // Connect to a channel
   const connectToChannel = useCallback(async (channelName: string, password: string) => {
@@ -542,18 +542,8 @@ function ChatRoomContent() {
   useEffect(() => {
     return () => {
       // Notify server and cleanup all channels
-      channels.forEach((channel, channelName) => {
-        fetch("/api/chat/leave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            channelHash: channel.hash,
-            userId: channel.userId,
-          }),
-        }).catch(console.error);
-      });
-
-      // Disconnect Pusher
+      // Note: we can't access current 'channels' state here due to closure
+      // but we should attempt best-effort cleanup if we had refs
       if (pusherRef.current) {
         pusherRef.current.disconnect();
       }

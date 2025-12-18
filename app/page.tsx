@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTemplate, AnimatePresence } from "framer-motion";
-import { Send, Share2, MessageSquare, Github, Lock, Database, Server, Terminal as TerminalIcon, Shield, ChevronDown, Copy, Check, ArrowRight, X, Code, FileText, Users, Zap, Smartphone, Clock, MousePointer2 } from "lucide-react";
+import { LucideIcon, Send, Share2, MessageSquare, Github, Lock, Database, Server, Shield, ChevronDown, Copy, Check, ArrowRight, Code, FileText, Users, Zap, Smartphone, Clock, MousePointer2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 // --- Components ---
 
-function TiltCard({ href, icon: Icon, title, description, badge }: { href: string; icon: any; title: string; description: string; badge?: string }) {
+function TiltCard({ href, icon: Icon, title, description, badge }: { href: string; icon: LucideIcon; title: string; description: string; badge?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -25,8 +25,8 @@ function TiltCard({ href, icon: Icon, title, description, badge }: { href: strin
   function onMouseMove({ clientX, clientY }: React.MouseEvent<HTMLDivElement>) {
     if (!ref.current) return;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const xPct = mouseX.set((clientX - left) / width - 0.5);
-    const yPct = mouseY.set((clientY - top) / height - 0.5);
+    mouseX.set((clientX - left) / width - 0.5);
+    mouseY.set((clientY - top) / height - 0.5);
   }
 
   function onMouseLeave() {
@@ -80,7 +80,7 @@ function TiltCard({ href, icon: Icon, title, description, badge }: { href: strin
   );
 }
 
-function MobileCard({ href, icon: Icon, title, description }: { href: string; icon: any; title: string; description: string }) {
+function MobileCard({ href, icon: Icon, title, description }: { href: string; icon: LucideIcon; title: string; description: string }) {
   return (
     <Link href={href} className="w-full group">
       <motion.div
@@ -114,7 +114,7 @@ function MobileCard({ href, icon: Icon, title, description }: { href: string; ic
   );
 }
 
-function FeatureItem({ icon: Icon, title, description, index }: { icon: any, title: string, description: string, index: number }) {
+function FeatureItem({ icon: Icon, title, description, index }: { icon: LucideIcon, title: string, description: string, index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -468,7 +468,7 @@ function ChatDemo() {
       { text: "🔒 ******************", sender: 'other', delay: 4000 },
     ] as const;
 
-    let timeouts: NodeJS.Timeout[] = [];
+    const timeouts: NodeJS.Timeout[] = [];
     
     // Loop the sequence
     const runSequence = () => {
