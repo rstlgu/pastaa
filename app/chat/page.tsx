@@ -40,7 +40,7 @@ export default function ChatHome() {
       {/* Header - Compact on mobile */}
       <header className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-3 md:px-4 h-14 md:h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link href="https://pastaa.io" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <PastaLogo className="h-6 w-6 md:h-7 md:w-7 text-primary" />
             <span className="font-bold font-righteous text-base md:text-lg">Pastaa</span>
             <span className="text-muted-foreground text-sm">/</span>

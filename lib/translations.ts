@@ -144,10 +144,29 @@ export const translations = {
     // Homepage
     heroTitle: 'Condivisione Testo Sicura',
     heroSubtitle: 'Condividi testo e codice in modo sicuro e invia messaggi cifrati con un editor open source',
-    sendButton: 'Send',
-    shareButton: 'Share',
-    sendDescription: 'Crittografia end-to-end, nessun server può leggere il tuo contenuto',
-    shareDescription: 'Editor collaborativo per codice e documenti in tempo reale',
+    sendButton: 'Invia',
+    shareButton: 'Condividi',
+    chatButton: 'Chat',
+    sendDescription: 'Messaggistica cifrata E2E e trasferimento file',
+    shareDescription: 'Collabora in tempo reale su codice e documenti',
+    // chatDescription: 'Chat di gruppo sicura, senza log e senza database',
+    
+    // Landing Sections (New)
+    featuresTitle: 'Perché scegliere Pastaa',
+    noDatabase: 'Nessun Database',
+    noDatabaseDesc: 'I dati sono nel link, non sui nostri server',
+    deployWithDocker: 'Deploy con Docker',
+    runCommand: 'Avvia la tua istanza in secondi',
+    
+    demoSendTitle: 'Invia Messaggi Cifrati',
+    demoSendDesc: 'Scrivi il tuo testo, cifralo localmente e condividi il link. La chiave di decifrazione è nel fragment (#) dell\'URL, quindi il server non la vede mai.',
+    demoShareTitle: 'Condivisione Testo e Codice',
+    demoShareDesc: 'Editor in tempo reale con syntax highlighting per oltre 10 linguaggi. Perfetto per condividere snippet di codice o lavorare su documenti insieme.',
+    demoChatTitle: 'Chat Anonima e Sicura',
+    demoChatDesc: 'Crea stanze "usa e getta". Nessuna registrazione, nessun log. I messaggi sono cifrati end-to-end e vivono solo nella memoria RAM.',
+    tryItBtn: 'Provalo ora',
+    encryptBtn: 'Cifra',
+    decryptBtn: 'Decifra',
     
     // Footer
     privacyPolicy: 'Privacy Policy',
@@ -157,7 +176,7 @@ export const translations = {
     
     // Chat
     chatTitle: 'Chat Sicura',
-    chatDescription: 'Chat di gruppo crittografata end-to-end. Nessun database, nessun account, nessun log.',
+    chatDescription: 'Chat di gruppo sicura, senza log e senza database.',
     channelName: 'Nome Canale',
     channelPassword: 'Password Canale',
     yourUsername: 'Il Tuo Username',
@@ -323,8 +342,27 @@ export const translations = {
     heroSubtitle: 'An online code editor and end-to-end encrypted text sharing system',
     sendButton: 'Send',
     shareButton: 'Share',
-    sendDescription: 'End-to-end encryption, no server can read your content',
-    shareDescription: 'Collaborative editor for code and documents in real-time',
+    chatButton: 'Chat',
+    sendDescription: 'E2E encrypted messaging and file transfer',
+    shareDescription: 'Collaborate on code and documents in real-time',
+    // chatDescription: 'Secure group chat, no logs, no database',
+    
+    // Landing Sections (New)
+    featuresTitle: 'Why Choose Pastaa',
+    noDatabase: 'No Database',
+    noDatabaseDesc: 'Data lives in the link, not on our servers',
+    deployWithDocker: 'Deploy with Docker',
+    runCommand: 'Get your instance running in seconds',
+    
+    demoSendTitle: 'Send Encrypted Messages',
+    demoSendDesc: 'Write your text, encrypt it locally, and share the link. The decryption key is in the URL fragment (#), so the server never sees it.',
+    demoShareTitle: 'Code & Text Collaboration',
+    demoShareDesc: 'Real-time editor with syntax highlighting for over 10 languages. Perfect for sharing code snippets or working on documents together.',
+    demoChatTitle: 'Anonymous & Secure Chat',
+    demoChatDesc: 'Create disposable rooms. No registration, no logs. Messages are end-to-end encrypted and live only in RAM.',
+    tryItBtn: 'Try it now',
+    encryptBtn: 'Encrypt',
+    decryptBtn: 'Decrypt',
     
     // Footer
     privacyPolicy: 'Privacy Policy',
@@ -358,4 +396,3 @@ export const translations = {
 };
 
 export type TranslationKey = keyof typeof translations.it;
-

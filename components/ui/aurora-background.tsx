@@ -25,9 +25,9 @@ export const AuroraBackground = ({
       <div className="absolute inset-0 overflow-hidden">
         <div
           className={cn(
-            "absolute -inset-[10px] opacity-50 will-change-transform pointer-events-none",
-            "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_0%,rgba(250,204,21,0.13),transparent_50%)]",
-            "after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_80%_50%,rgba(250,204,21,0.13),transparent_50%)]",
+            "absolute -inset-[10px] opacity-30 will-change-transform pointer-events-none",
+            "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_0%,rgba(250,204,21,0.05),transparent_50%)]",
+            "after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_80%_50%,rgba(250,204,21,0.05),transparent_50%)]",
             "before:animate-aurora",
             "after:animate-aurora after:animation-delay-2000",
             showRadialGradient &&
