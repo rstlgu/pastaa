@@ -177,80 +177,112 @@ function DockerTerminal() {
 // --- Demo Components ---
 
 function SendDemo() {
-  const { t } = useLanguage();
   const [step, setStep] = useState(0);
-  const [text, setText] = useState("");
-  const fullText = "My secret password is: pasta-lover-123";
-
+  
   useEffect(() => {
-    if (step === 0) {
-      let i = 0;
-      const interval = setInterval(() => {
-        setText(fullText.slice(0, i + 1));
-        i++;
-        if (i >= fullText.length) {
-          clearInterval(interval);
-          setTimeout(() => setStep(1), 1000);
-        }
-      }, 50);
-      return () => clearInterval(interval);
-    }
-  }, [step]);
+    // Sequenza temporale precisa
+    const interval = setInterval(() => {
+      setStep(s => (s + 1) % 4);
+    }, 2500); // 2.5s per step
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="w-full max-w-md bg-card rounded-xl border border-border shadow-2xl overflow-hidden">
-      <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full bg-red-500/50" />
-        <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-        <div className="w-3 h-3 rounded-full bg-green-500/50" />
-        <span className="ml-2 text-xs text-muted-foreground font-mono">pastaa.io/send</span>
-      </div>
-      <div className="p-6 space-y-4">
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">{t('textPlaceholder')}</label>
-          <div className="w-full h-32 p-3 rounded-md bg-muted/50 text-sm font-mono break-all border border-border/50">
-            {step >= 2 ? (
-              <span className="text-green-500">
-                U2FsdGVkX19v8+tH5J2...
-                <br/>
-                [Encrypted AES-256]
-              </span>
-            ) : (
-              text
-            )}
-            <span className="animate-pulse">|</span>
+    <div className="w-full max-w-md perspective-1000">
+      <motion.div 
+        animate={{ 
+          rotateX: [0, 5, 0, -5, 0],
+          rotateY: [0, -5, 0, 5, 0],
+          boxShadow: [
+            "0px 5px 15px rgba(0,0,0,0.2)",
+            "0px 10px 25px rgba(0,0,0,0.3)", 
+            "0px 5px 15px rgba(0,0,0,0.2)"
+          ]
+        }}
+        transition={{ 
+          duration: 10, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+        className="bg-card rounded-xl border border-primary/20 overflow-hidden transform-style-3d"
+      >
+        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="flex gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500/50" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+            <div className="w-3 h-3 rounded-full bg-green-500/50" />
+            <span className="ml-2 text-xs text-muted-foreground font-mono">pastaa.io/send</span>
           </div>
+          <Lock className="w-3 h-3 text-muted-foreground" />
         </div>
         
-        {step === 1 && (
-           <motion.button
-             initial={{ scale: 0.9, opacity: 0 }}
-             animate={{ scale: 1, opacity: 1 }}
-             onClick={() => setStep(2)}
-             className="w-full py-2 bg-primary text-primary-foreground rounded-md text-sm font-bold flex items-center justify-center gap-2"
-           >
-             <Lock className="w-4 h-4" />
-             {t('encryptBtn')}
-           </motion.button>
-        )}
-        
-        {step === 2 && (
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="p-3 bg-primary/10 rounded-md border border-primary/20 flex items-center justify-between"
-          >
-             <span className="text-xs font-mono text-primary truncate">pastaa.io/v/a8k2...#key</span>
-             <Check className="w-4 h-4 text-primary" />
-          </motion.div>
-        )}
+        <div className="p-6 space-y-4 h-[280px] relative">
+          <AnimatePresence mode="wait">
+            {step === 0 && (
+              <motion.div
+                key="step0"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                <div className="h-2 w-1/3 bg-muted rounded animate-pulse" />
+                <div className="h-24 w-full bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground border border-border/50">
+                  <span className="text-foreground">Secret password:</span> 1234-5678-ABCD
+                </div>
+                <div className="flex justify-end">
+                   <div className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-xs font-bold shadow-lg shadow-primary/20">
+                     Encrypt
+                   </div>
+                </div>
+              </motion.div>
+            )}
 
-        {step === 2 && (
-          <button onClick={() => { setStep(0); setText(""); }} className="text-xs text-muted-foreground hover:text-foreground w-full text-center mt-2">
-            Reset Demo
-          </button>
-        )}
-      </div>
+            {step === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-card/80 backdrop-blur-sm z-10"
+              >
+                 <motion.div 
+                   animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+                   transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                 >
+                   <Lock className="w-12 h-12 text-primary" />
+                 </motion.div>
+                 <div className="font-mono text-xs text-primary animate-pulse">AES-256-GCM Encrypting...</div>
+              </motion.div>
+            )}
+
+            {(step === 2 || step === 3) && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center h-full gap-4 text-center"
+              >
+                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center border border-green-500/20">
+                  <Check className="w-8 h-8 text-green-500" />
+                </div>
+                <div className="space-y-2 w-full px-8">
+                  <div className="text-sm font-bold">Link Ready!</div>
+                  <div className="bg-muted p-2 rounded text-[10px] font-mono break-all border border-border/50 select-all relative overflow-hidden group">
+                    <motion.div 
+                       initial={{ x: "-100%" }}
+                       animate={{ x: "100%" }}
+                       transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                    />
+                    https://pastaa.io/#Key...
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -269,24 +301,41 @@ function ShareDemo() {
   useEffect(() => {
     const interval = setInterval(() => {
       setStep(s => (s > code.length + 4 ? 0 : s + 1));
-    }, 800);
+    }, 600); // Più veloce
     return () => clearInterval(interval);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lines = code.slice(0, Math.min(step, code.length));
 
   return (
-    <div className="w-full max-w-md bg-[#1e1e1e] rounded-xl border border-white/10 shadow-2xl overflow-hidden font-mono text-sm">
+    <div className="w-full max-w-md perspective-1000">
+      <motion.div 
+         animate={{ 
+           rotateY: [0, -10, 0, 10, 0],
+           z: [0, 20, 0],
+         }}
+         transition={{ 
+           duration: 12, 
+           repeat: Infinity, 
+           ease: "easeInOut" 
+         }}
+         className="bg-[#1e1e1e] rounded-xl border border-white/10 shadow-2xl overflow-hidden font-mono text-sm transform-style-3d"
+      >
       <div className="flex items-center justify-between px-4 py-3 bg-[#252526] border-b border-white/5">
         <span className="text-white/50 text-xs">main.ts - Edited by Alice</span>
         <div className="flex -space-x-2">
-           <div className="w-6 h-6 rounded-full bg-blue-500 border border-[#252526] flex items-center justify-center text-[10px] text-white">A</div>
-           <div className="w-6 h-6 rounded-full bg-purple-500 border border-[#252526] flex items-center justify-center text-[10px] text-white">B</div>
+           <div className="w-6 h-6 rounded-full bg-blue-500 border border-[#252526] flex items-center justify-center text-[10px] text-white ring-2 ring-[#1e1e1e]">A</div>
+           <div className="w-6 h-6 rounded-full bg-purple-500 border border-[#252526] flex items-center justify-center text-[10px] text-white ring-2 ring-[#1e1e1e]">B</div>
         </div>
       </div>
-      <div className="p-4 h-48 overflow-hidden text-gray-300">
+      <div className="p-4 h-48 overflow-hidden text-gray-300 relative">
         {lines.map((line, i) => (
-          <div key={i} className="flex gap-4">
+          <motion.div 
+            key={i} 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex gap-4"
+          >
              <span className="text-gray-600 select-none w-4 text-right">{i + 1}</span>
              <span>
                <span className="text-pink-400">{line.includes('function') ? 'function' : ''}</span>
@@ -294,20 +343,40 @@ function ShareDemo() {
                <span className="text-yellow-300">{line.includes('return') ? 'return' : ''}</span>
                <span className="text-white">{line.replace(/function|const|return/g, '')}</span>
              </span>
-          </div>
+          </motion.div>
         ))}
-        <div className="flex gap-4 animate-pulse">
+        <motion.div 
+          className="flex gap-4"
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.8, repeat: Infinity }}
+        >
            <span className="text-gray-600 select-none w-4 text-right">{lines.length + 1}</span>
-           <span className="w-2 h-4 bg-blue-500/50 block" />
-        </div>
+           <span className="w-2 h-4 bg-blue-500/50 block shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+        </motion.div>
+        
+        {/* Glow effect bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#1e1e1e] to-transparent pointer-events-none" />
       </div>
+      </motion.div>
     </div>
   );
 }
 
 function CursorDemo() {
   return (
-    <div className="w-full max-w-md bg-card rounded-xl border border-primary/20 shadow-2xl overflow-hidden h-[320px] relative font-mono text-sm p-6 select-none cursor-none bg-grid-black/[0.02] dark:bg-grid-white/[0.02]">
+    <div className="w-full max-w-md perspective-1000">
+    <motion.div 
+      animate={{ 
+        rotateX: [2, 0, -2, 0, 2],
+        rotateY: [-2, 0, 2, 0, -2],
+      }}
+      transition={{ 
+        duration: 8, 
+        repeat: Infinity, 
+        ease: "easeInOut" 
+      }}
+      className="bg-card rounded-xl border border-primary/20 shadow-2xl overflow-hidden h-[320px] relative font-mono text-sm p-6 select-none cursor-none bg-grid-black/[0.02] dark:bg-grid-white/[0.02] transform-style-3d"
+    >
       <div className="space-y-4 opacity-30">
         <div className="h-4 w-3/4 bg-foreground/20 rounded animate-pulse" />
         <div className="h-4 w-1/2 bg-foreground/20 rounded animate-pulse delay-100" />
@@ -330,7 +399,7 @@ function CursorDemo() {
         }}
         className="absolute top-0 left-0 z-20"
       >
-        <MousePointer2 className="w-5 h-5 text-blue-500 fill-blue-500 stroke-[2px]" />
+        <MousePointer2 className="w-5 h-5 text-blue-500 fill-blue-500 stroke-[2px] drop-shadow-lg" />
         <div className="px-2 py-0.5 bg-blue-500 text-white text-[10px] rounded ml-3 -mt-1 font-bold whitespace-nowrap shadow-sm">
           Alice
         </div>
@@ -350,7 +419,7 @@ function CursorDemo() {
         }}
         className="absolute top-0 left-0 z-20"
       >
-        <MousePointer2 className="w-5 h-5 text-pink-500 fill-pink-500 stroke-[2px]" />
+        <MousePointer2 className="w-5 h-5 text-pink-500 fill-pink-500 stroke-[2px] drop-shadow-lg" />
         <div className="px-2 py-0.5 bg-pink-500 text-white text-[10px] rounded ml-3 -mt-1 font-bold whitespace-nowrap shadow-sm">
           Bob
         </div>
@@ -370,11 +439,12 @@ function CursorDemo() {
         }}
         className="absolute top-0 left-0 z-20"
       >
-        <MousePointer2 className="w-5 h-5 text-yellow-500 fill-yellow-500 stroke-[2px]" />
+        <MousePointer2 className="w-5 h-5 text-yellow-500 fill-yellow-500 stroke-[2px] drop-shadow-lg" />
         <div className="px-2 py-0.5 bg-yellow-500 text-black text-[10px] rounded ml-3 -mt-1 font-bold whitespace-nowrap shadow-sm">
           Charlie
         </div>
       </motion.div>
+    </motion.div>
     </div>
   );
 }
@@ -421,7 +491,19 @@ function ChatDemo() {
   }, []);
 
   return (
-    <div className="w-full max-w-md bg-card rounded-xl border border-primary/20 shadow-2xl overflow-hidden flex flex-col h-[320px]">
+    <div className="w-full max-w-md perspective-1000">
+    <motion.div 
+      animate={{ 
+        rotateX: [0, 2, 0, -2, 0],
+        y: [0, -10, 0],
+      }}
+      transition={{ 
+        duration: 6, 
+        repeat: Infinity, 
+        ease: "easeInOut" 
+      }}
+      className="bg-card rounded-xl border border-primary/20 shadow-2xl overflow-hidden flex flex-col h-[320px] transform-style-3d"
+    >
       <div className="p-3 bg-primary/10 border-b border-primary/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -434,10 +516,10 @@ function ChatDemo() {
           {messages.map((msg) => (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, x: msg.sender === 'me' ? 20 : -20, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
+              initial={{ opacity: 0, x: msg.sender === 'me' ? 20 : -20, scale: 0.9, rotate: msg.sender === 'me' ? 1 : -1 }}
+              animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
               className={cn(
-                "max-w-[80%] p-3 rounded-2xl text-sm",
+                "max-w-[80%] p-3 rounded-2xl text-sm shadow-sm",
                 msg.sender === 'me' 
                   ? "ml-auto bg-primary text-primary-foreground rounded-tr-sm" 
                   : "bg-muted rounded-tl-sm"
@@ -451,6 +533,7 @@ function ChatDemo() {
       <div className="p-3 border-t border-border bg-muted/20">
         <div className="h-8 rounded-full bg-muted border border-border/50 w-full" />
       </div>
+    </motion.div>
     </div>
   );
 }

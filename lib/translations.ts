@@ -358,7 +358,7 @@ export const translations = {
     demoSendDesc: 'Write your text, encrypt it locally, and share the link. The decryption key is in the URL fragment (#), so the server never sees it.',
     demoShareTitle: 'Code & Text Collaboration',
     demoShareDesc: 'Real-time editor with syntax highlighting for over 10 languages. Perfect for sharing code snippets or working on documents together.',
-    demoChatTitle: 'Anonymous & Secure Chat',
+    demoChatTitle: 'Anonymous and Secure Chat',
     demoChatDesc: 'Create disposable rooms. No registration, no logs. Messages are end-to-end encrypted and live only in RAM.',
     tryItBtn: 'Try it now',
     encryptBtn: 'Encrypt',
@@ -372,7 +372,7 @@ export const translations = {
     
     // Chat
     chatTitle: 'Secure Chat',
-    chatDescription: 'End-to-end encrypted group chat. No databases, no accounts, no logs.',
+    chatDescription: 'End-to-end encrypted group chat. No DB. No logs.',
     channelName: 'Channel Name',
     channelPassword: 'Channel Password',
     yourUsername: 'Your Username',

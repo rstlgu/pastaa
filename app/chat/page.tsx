@@ -70,7 +70,7 @@ export default function ChatHome() {
               Secure Chat
             </h1>
             <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
-              End-to-end encrypted group chat. No databases, no accounts, no logs.
+              End-to-end encrypted group chat. No logs.
             </p>
           </div>
 
