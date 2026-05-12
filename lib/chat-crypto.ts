@@ -275,6 +275,19 @@ export function encryptLayer3(
   };
 }
 
+export function encryptBytesLayer3(
+  plaintext: Uint8Array,
+  sharedSecret: Uint8Array
+): { ciphertext: Uint8Array; nonce: string } {
+  const nonce = randomBytes(12);
+  const cipher = chacha20poly1305(sharedSecret, nonce);
+  const encrypted = cipher.encrypt(plaintext);
+  return {
+    ciphertext: encrypted,
+    nonce: bytesToHex(nonce),
+  };
+}
+
 export function decryptLayer3(
   ciphertext: string,
   nonce: string,
@@ -283,6 +296,15 @@ export function decryptLayer3(
   const cipher = chacha20poly1305(sharedSecret, hexToBytes(nonce));
   const decrypted = cipher.decrypt(hexToBytes(ciphertext));
   return bytesToUtf8(decrypted);
+}
+
+export function decryptBytesLayer3(
+  ciphertext: Uint8Array,
+  nonce: string,
+  sharedSecret: Uint8Array
+): Uint8Array {
+  const cipher = chacha20poly1305(sharedSecret, hexToBytes(nonce));
+  return cipher.decrypt(ciphertext);
 }
 
 // ============================================

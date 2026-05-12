@@ -37,3 +37,15 @@ model PublicPage {
   updatedAt DateTime  @updatedAt
 }
 
+model ChatFile {
+  id          String   @id @default(uuid())
+  channelHash String
+  storagePath String   @unique
+  size        Int
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([channelHash])
+}
+

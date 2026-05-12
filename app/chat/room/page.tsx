@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Lock, LogOut, Shield, Plus, Hash, X, Eye, EyeOff } from "lucide-react";
+import { Users, Lock, LogOut, Shield, Plus, Hash, X, Eye, EyeOff, Paperclip, Download, Flame } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import Link from "next/link";
@@ -13,12 +13,15 @@ import {
   deriveChatChannelId,
   deriveGroupKey,
   encryptLayer3,
+  encryptBytesLayer3,
   decryptLayer3,
+  decryptBytesLayer3,
   bytesToHex,
   hexToBytes,
   randomBytes,
   Layer3Keys,
 } from "@/lib/chat-crypto";
+import { ATTACHMENT_ACCEPT, isAllowedAttachmentMimeType } from "@/lib/allowed-attachments";
 import type { ChatMessageEvent, MemberJoinEvent, MemberLeaveEvent, MemberSyncEvent } from "@/lib/pusher";
 
 interface ChatMember {
@@ -33,9 +36,20 @@ interface ChatMessage {
   from: string;
   fromUsername: string;
   content: string;
+  file?: ChatFileContent;
   timestamp: Date;
   encrypted: boolean;
   isSystem?: boolean;
+}
+
+interface ChatFileContent {
+  type: "file";
+  fileId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  expiresAt: string;
+  fileNonce: string;
 }
 
 interface ChannelData {
@@ -58,6 +72,8 @@ interface SavedChannel {
 
 const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
 const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+const MAX_CHAT_FILE_SIZE = 10 * 1024 * 1024;
+const CHAT_FILE_EXPIRY_MS = 10 * 60 * 1000;
 
 function getChannelSessionKey(channelName: string): string {
   return `chat-session-${channelName}`;
@@ -71,6 +87,32 @@ function isSavedChannel(value: unknown): value is SavedChannel {
     typeof candidate.hash === "string" &&
     typeof candidate.groupKeyHex === "string"
   );
+}
+
+function formatChatFileSize(size: number): string {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function parseChatFileContent(content: string): ChatFileContent | undefined {
+  try {
+    const parsed = JSON.parse(content) as Partial<ChatFileContent>;
+    if (
+      parsed.type === "file" &&
+      typeof parsed.fileId === "string" &&
+      typeof parsed.name === "string" &&
+      typeof parsed.mimeType === "string" &&
+      typeof parsed.size === "number" &&
+      typeof parsed.expiresAt === "string" &&
+      typeof parsed.fileNonce === "string"
+    ) {
+      return parsed as ChatFileContent;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
 }
 
 function ChatRoomContent() {
@@ -93,10 +135,14 @@ function ChatRoomContent() {
   const [showMembers, setShowMembers] = useState(true);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const [uploadingFileName, setUploadingFileName] = useState("");
+  const [downloadingFileId, setDownloadingFileId] = useState("");
 
   const pusherRef = useRef<Pusher | null>(null);
   const channelRefs = useRef<Map<string, ReturnType<Pusher["subscribe"]>>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get active channel data
   const activeChannel = channels.get(activeChannelName);
@@ -174,6 +220,11 @@ function ChatRoomContent() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [activeChannel?.messages, activeChannel?.messages.length, activeChannel?.name]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // Connect to a channel
   const connectToChannel = useCallback(async (channelName: string, hash: string, groupKey: Uint8Array) => {
@@ -328,6 +379,7 @@ function ChatRoomContent() {
             from: data.from,
             fromUsername: data.fromUsername,
             content,
+            file: decryptionFailed ? undefined : parseChatFileContent(content),
             timestamp: new Date(data.timestamp),
             encrypted: true,
             isSystem: decryptionFailed,
@@ -531,6 +583,131 @@ function ChatRoomContent() {
       console.error("Error sending message:", error);
     }
   }, [inputMessage, activeChannel, activeChannelName, username]);
+
+  const sendEncryptedFile = useCallback(async (file: File) => {
+    if (!activeChannel || !activeChannel.isConnected) return;
+
+    if (!isAllowedAttachmentMimeType(file.type)) {
+      alert("Formato file non supportato. Sono consentiti solo immagini, PDF, TXT, Markdown e CSV.");
+      return;
+    }
+
+    if (file.size > MAX_CHAT_FILE_SIZE) {
+      alert("File troppo grande (max 10MB)");
+      return;
+    }
+
+    const messageId = `msg-${Date.now()}-${bytesToHex(randomBytes(9))}`;
+    setUploadingFileName(file.name);
+
+    try {
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      const encryptedFile = encryptBytesLayer3(fileBytes, activeChannel.groupKey);
+      const encryptedBuffer = encryptedFile.ciphertext.buffer.slice(
+        encryptedFile.ciphertext.byteOffset,
+        encryptedFile.ciphertext.byteOffset + encryptedFile.ciphertext.byteLength
+      ) as ArrayBuffer;
+      const formData = new FormData();
+      formData.append("channelHash", activeChannel.hash);
+      formData.append("file", new Blob([encryptedBuffer], { type: "application/octet-stream" }));
+
+      const uploadResponse = await fetch("/api/chat/file", {
+        method: "POST",
+        body: formData,
+      });
+      const uploadData = (await uploadResponse.json().catch(() => ({}))) as {
+        fileId?: string;
+        expiresAt?: string;
+        error?: string;
+      };
+
+      if (!uploadResponse.ok || !uploadData.fileId || !uploadData.expiresAt) {
+        throw new Error(uploadData.error || "Upload file non riuscito");
+      }
+
+      const fileContent: ChatFileContent = {
+        type: "file",
+        fileId: uploadData.fileId,
+        name: file.name,
+        mimeType: file.type || "application/octet-stream",
+        size: file.size,
+        expiresAt: uploadData.expiresAt,
+        fileNonce: encryptedFile.nonce,
+      };
+      const content = JSON.stringify(fileContent);
+
+      setChannels(prev => {
+        const updated = new Map(prev);
+        const ch = updated.get(activeChannelName);
+        if (ch) {
+          ch.messages.push({
+            id: messageId,
+            from: ch.userId,
+            fromUsername: username,
+            content,
+            file: fileContent,
+            timestamp: new Date(),
+            encrypted: true,
+          });
+        }
+        return updated;
+      });
+
+      const { ciphertext, nonce } = encryptLayer3(content, activeChannel.groupKey);
+      await fetch("/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channelHash: activeChannel.hash,
+          messageId,
+          fromUserId: activeChannel.userId,
+          fromUsername: username,
+          encryptedContent: ciphertext,
+          nonce,
+          senderPublicKey: bytesToHex(activeChannel.keys.publicKey),
+        }),
+      });
+    } catch (error) {
+      console.error("Error sending encrypted file:", error);
+      alert(error instanceof Error ? error.message : "Invio file non riuscito");
+    } finally {
+      setUploadingFileName("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [activeChannel, activeChannelName, username]);
+
+  const downloadEncryptedFile = useCallback(async (file: ChatFileContent, groupKey: Uint8Array) => {
+    if (Date.parse(file.expiresAt) <= Date.now()) return;
+
+    setDownloadingFileId(file.fileId);
+    try {
+      const response = await fetch(`/api/chat/file/${file.fileId}`);
+      if (!response.ok) {
+        throw new Error(response.status === 410 ? "File autodistrutto" : "Download file non riuscito");
+      }
+
+      const encryptedBytes = new Uint8Array(await response.arrayBuffer());
+      const decryptedBytes = decryptBytesLayer3(encryptedBytes, file.fileNonce, groupKey);
+      const decryptedBuffer = decryptedBytes.buffer.slice(
+        decryptedBytes.byteOffset,
+        decryptedBytes.byteOffset + decryptedBytes.byteLength
+      ) as ArrayBuffer;
+      const blob = new Blob([decryptedBuffer], { type: file.mimeType || "application/octet-stream" });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error("Error downloading encrypted file:", error);
+      alert(error instanceof Error ? error.message : "Download file non riuscito");
+    } finally {
+      setDownloadingFileId("");
+    }
+  }, []);
 
   // Add new channel
   const handleAddChannel = async (e: React.FormEvent) => {
@@ -812,7 +989,78 @@ function ChatRoomContent() {
                               {msg.fromUsername}
                             </p>
                           )}
-                          <p className="break-words text-sm">{msg.content}</p>
+                          {msg.file ? (
+                            (() => {
+                              const remainingMs = Math.max(0, Date.parse(msg.file.expiresAt) - now);
+                              const isExpired = remainingMs === 0;
+                              const progress = Math.max(0, Math.min(100, (remainingMs / CHAT_FILE_EXPIRY_MS) * 100));
+                              const minutes = Math.floor(remainingMs / 60000);
+                              const seconds = Math.floor((remainingMs % 60000) / 1000);
+
+                              return (
+                                <div className="w-64 max-w-full space-y-2">
+                                  <div className="flex items-start gap-2">
+                                    <motion.div
+                                      animate={isExpired ? { scale: [1, 1.2, 1], rotate: [0, -8, 8, 0] } : { scale: [1, 1.05, 1] }}
+                                      transition={{ duration: isExpired ? 0.8 : 2, repeat: Infinity }}
+                                      className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${
+                                        isExpired ? "bg-destructive/20 text-destructive" : "bg-background/30"
+                                      }`}
+                                    >
+                                      {isExpired ? <Flame className="h-4 w-4" /> : <Paperclip className="h-4 w-4" />}
+                                    </motion.div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-sm font-semibold">
+                                        {isExpired ? "File autodistrutto" : msg.file.name}
+                                      </p>
+                                      <p className="text-xs opacity-70">
+                                        {formatChatFileSize(msg.file.size)} •{" "}
+                                        {isExpired
+                                          ? "bruciato"
+                                          : `${minutes}:${seconds.toString().padStart(2, "0")}`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="h-1.5 overflow-hidden rounded-full bg-background/30">
+                                    <motion.div
+                                      className={`h-full ${isExpired ? "bg-destructive" : "bg-primary"}`}
+                                      animate={{ width: `${progress}%` }}
+                                      transition={{ duration: 0.4 }}
+                                    />
+                                  </div>
+                                  <AnimatePresence mode="wait">
+                                    {isExpired ? (
+                                      <motion.div
+                                        key="burned"
+                                        initial={{ opacity: 0, scale: 0.92 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                                      >
+                                        Questo allegato è stato distrutto.
+                                      </motion.div>
+                                    ) : (
+                                      <motion.button
+                                        key="download"
+                                        type="button"
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          downloadEncryptedFile(msg.file!, activeChannel.groupKey);
+                                        }}
+                                        disabled={downloadingFileId === msg.file.fileId}
+                                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-current/20 bg-background/20 px-3 py-2 text-xs font-semibold transition-colors hover:bg-background/30 disabled:opacity-50"
+                                      >
+                                        <Download className="h-3.5 w-3.5" />
+                                        {downloadingFileId === msg.file.fileId ? "Download..." : "Scarica e decifra"}
+                                      </motion.button>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <p className="break-words text-sm">{msg.content}</p>
+                          )}
                           
                           {/* Time - shown on tap */}
                           <AnimatePresence>
@@ -845,13 +1093,33 @@ function ChatRoomContent() {
               <form onSubmit={sendMessage} className="p-3 md:p-4 bg-transparent relative">
                 <div className="relative flex items-center max-w-3xl mx-auto">
                   <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ATTACHMENT_ACCEPT}
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void sendEncryptedFile(file);
+                    }}
+                    disabled={!activeChannel.isConnected || Boolean(uploadingFileName)}
+                  />
+                  <input
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder={activeChannel.isConnected ? "Type a message..." : "Connecting to realtime..."}
-                    className="w-full pl-4 pr-14 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-full outline-none transition-colors text-base"
+                    className="w-full pl-12 pr-14 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-full outline-none transition-colors text-base"
                     disabled={!activeChannel.isConnected}
                   />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!activeChannel.isConnected || Boolean(uploadingFileName)}
+                    className="absolute left-1.5 h-9 w-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-background/70 hover:text-foreground transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                    title="Allega file cifrato"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
                   <button
                     type="submit"
                     disabled={!inputMessage.trim() || !activeChannel.isConnected}
@@ -875,6 +1143,11 @@ function ChatRoomContent() {
                 {!activeChannel.isConnected && (
                   <p className="mt-2 text-center text-xs text-muted-foreground">
                     Waiting for realtime connection. Check the system message above if it does not connect.
+                  </p>
+                )}
+                {uploadingFileName && (
+                  <p className="mt-2 text-center text-xs text-primary">
+                    Cifratura e upload di {uploadingFileName}...
                   </p>
                 )}
             </form>

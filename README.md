@@ -42,6 +42,7 @@
 - **No Storage** — Messages are never stored on the server
 - **Required Channel Password** — Room keys are derived in the browser
 - **Private Channel IDs** — Realtime channel identifiers depend on channel name + password
+- **Encrypted File Attachments** — Up to 10MB, encrypted in the browser and auto-destroyed after 10 minutes
 - **Real-time** — Instant message delivery via WebSockets
 - **Zero Knowledge** — Server cannot read your messages
 
@@ -82,6 +83,7 @@ The realtime transport is handled by Pusher. Pastaa sends only encrypted message
 | Channel-based | Create or join channels by name |
 | Required password | Messages encrypted with a room key derived from the channel password |
 | Private channel ID | Pusher channel ID is derived from channel name + password |
+| Encrypted files | Files are encrypted locally, stored as ciphertext in Supabase Storage, and expire after 10 minutes |
 | No persistence | Messages exist only during session |
 | Telegram-style avatars | Colored initials for each user |
 | Real-time presence | See who's in the channel |
@@ -100,6 +102,7 @@ The realtime transport is handled by Pusher. Pastaa sends only encrypted message
 | Database | PostgreSQL + Prisma |
 | Editor | CodeMirror, TipTap |
 | Real-time | Pusher (WebSockets) |
+| File Storage | Supabase Storage (encrypted chat attachments) |
 | Deployment | Vercel, Docker |
 
 ---
@@ -150,6 +153,11 @@ NEXT_PUBLIC_PUSHER_CLUSTER=eu
 PUSHER_APP_ID=your_app_id
 PUSHER_SECRET=your_secret
 
+# Supabase Storage (required for encrypted Chat file attachments)
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_CHAT_FILES_BUCKET=chat-files
+
 # Resend (optional, for Send by email)
 RESEND_API_KEY=
 RESEND_FROM=Pastaa <noreply@your-domain.tld>
@@ -178,6 +186,9 @@ PUSHER_APP_ID=your_app_id
 PUSHER_SECRET=your_secret
 NEXT_PUBLIC_PUSHER_KEY=your_key
 NEXT_PUBLIC_PUSHER_CLUSTER=eu
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_CHAT_FILES_BUCKET=chat-files
 RESEND_API_KEY=
 RESEND_FROM=Pastaa <noreply@your-domain.tld>
 EMAIL_VERIFICATION_SECRET=
@@ -221,6 +232,9 @@ docker run -p 3000:3000 \
   -e PUSHER_SECRET="your_secret" \
   -e NEXT_PUBLIC_PUSHER_KEY="your_key" \
   -e NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
+  -e SUPABASE_URL="https://your-project.supabase.co" \
+  -e SUPABASE_SERVICE_ROLE_KEY="your_service_role_key" \
+  -e SUPABASE_CHAT_FILES_BUCKET="chat-files" \
   -e RESEND_API_KEY="your_resend_key" \
   -e RESEND_FROM="Pastaa <noreply@your-domain.tld>" \
   -e EMAIL_VERIFICATION_SECRET="your_random_secret" \
@@ -235,8 +249,9 @@ docker run -p 3000:3000 \
 |-----------|----------|-------|
 | PostgreSQL | Yes | For storing encrypted pastes and share pages |
 | Pusher | Only for Chat | Free tier available at pusher.com |
+| Supabase Storage | Only for Chat file attachments | Private bucket recommended |
 | Redis | No | Not required |
-| Object Storage | No | All data stored in database |
+| Object Storage | Optional | Only encrypted chat file blobs use object storage |
 
 ### What Works Without Pusher
 
@@ -257,6 +272,7 @@ docker run -p 3000:3000 \
 |---------|-----------|----------|
 | Send (Paste) | AES-GCM | 256-bit |
 | Chat Messages | ChaCha20-Poly1305 | 256-bit |
+| Chat Files | ChaCha20-Poly1305 | 256-bit |
 | Chat Key Derivation | PBKDF2-SHA256, 250,000 iterations | 256-bit |
 | Chat Channel ID | SHA-256(channel name + password) | 256-bit |
 
@@ -278,6 +294,7 @@ Pastaa Chat uses a shared-room E2E model:
 
 - The channel password is required and never leaves the browser.
 - The browser derives a 256-bit room key with PBKDF2-SHA256 and uses it to encrypt/decrypt messages with ChaCha20-Poly1305.
+- File attachments are encrypted locally before upload. Supabase Storage receives only ciphertext and files are rejected after a fixed 10-minute expiry.
 - The server and Pusher receive only encrypted message payloads, nonces, delivery metadata, and a channel identifier derived from the channel name + password.
 - Anyone with the same channel name and password can join and decrypt messages in that room. Pastaa does not provide Signal-style per-device identity verification or per-message forward secrecy.
 

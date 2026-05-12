@@ -26,6 +26,7 @@ import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import { FeatureBadge } from "@/components/feature-badge";
 import { GitHubBadge } from "@/components/github-badge";
+import { ATTACHMENT_ACCEPT, isAllowedAttachmentMimeType } from "@/lib/allowed-attachments";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -285,6 +286,11 @@ export default function HomePage() {
 
     if (selectedFiles.length > MAX_FILE_COUNT || totalFileSize > MAX_FILE_SIZE) {
       alert(t('fileTooLarge'));
+      return;
+    }
+
+    if (!selectedFiles.every((file) => isAllowedAttachmentMimeType(file.type))) {
+      alert(t('fileTypeNotAllowed'));
       return;
     }
 
@@ -581,6 +587,12 @@ export default function HomePage() {
     const nextFiles = [...selectedFiles, ...files].slice(0, MAX_FILE_COUNT + 1);
     const totalFileSize = getTotalFileSize(nextFiles);
 
+    if (files.some((file) => !isAllowedAttachmentMimeType(file.type))) {
+      setFileError(t('fileTypeNotAllowed'));
+      e.target.value = "";
+      return;
+    }
+
     if (nextFiles.length > MAX_FILE_COUNT || totalFileSize > MAX_FILE_SIZE) {
       setFileError(t('fileTooLarge'));
       e.target.value = "";
@@ -755,6 +767,7 @@ export default function HomePage() {
                   ref={fileInputRef}
                   id="file-upload"
                   type="file"
+                  accept={ATTACHMENT_ACCEPT}
                   multiple
                   onChange={handleFileChange}
                   className="hidden"
