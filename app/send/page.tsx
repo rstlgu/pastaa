@@ -131,13 +131,17 @@ function TurnstileChallenge({ onTokenChange }: TurnstileChallengeProps) {
 
   if (!TURNSTILE_SITE_KEY) {
     return (
-      <p className="text-xs text-destructive">
+      <p className="text-center text-xs text-destructive">
         CAPTCHA non configurato: imposta NEXT_PUBLIC_TURNSTILE_SITE_KEY.
       </p>
     );
   }
 
-  return <div ref={containerRef} className="min-h-[65px]" />;
+  return (
+    <div className="flex min-h-[76px] items-center justify-center rounded-xl border border-primary/10 bg-background/70 px-3 py-2">
+      <div ref={containerRef} />
+    </div>
+  );
 }
 
 function formatFileSize(size: number): string {
@@ -177,6 +181,7 @@ export default function HomePage() {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [showEmailShareForm, setShowEmailShareForm] = useState(true);
   const [captchaToken, setCaptchaToken] = useState("");
   const [copied, setCopied] = useState(false);
   
@@ -536,6 +541,7 @@ export default function HomePage() {
 
       toast.success(t("emailSent"));
       setCaptchaToken("");
+      setShowEmailShareForm(false);
     } catch {
       toast.error(t("emailSendFailed"));
     } finally {
@@ -560,6 +566,7 @@ export default function HomePage() {
     setRecipientEmail("");
     setEmailMessage("");
     setIsSendingEmail(false);
+    setShowEmailShareForm(true);
     setCaptchaToken("");
   }
 
@@ -592,17 +599,34 @@ export default function HomePage() {
   }
 
   function renderEmailShareForm() {
+    if (!showEmailShareForm) {
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowEmailShareForm(true)}
+          className="w-full border-2"
+        >
+          <Mail className="mr-2 h-4 w-4" />
+          {t('sendByEmail')}
+        </Button>
+      );
+    }
+
     return (
-      <div className="rounded-lg border-2 bg-muted/40 p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <Mail className="h-5 w-5 text-primary" />
+      <div className="rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-4 shadow-lg shadow-black/10 md:p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-primary/30 bg-primary/10">
+            <Mail className="h-5 w-5 text-primary" />
+          </div>
           <div>
-            <p className="text-sm font-semibold">{t('sendByEmail')}</p>
-            <p className="text-xs text-muted-foreground">{t('emailShareDescription')}</p>
+            <p className="text-base font-semibold">{t('sendByEmail')}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{t('emailShareDescription')}</p>
           </div>
         </div>
-        <div className="flex flex-col gap-3">
-          <div className="space-y-2">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 rounded-xl border border-border/70 bg-background/55 p-3">
+            <label className="text-xs font-medium text-muted-foreground">{t('senderEmail')}</label>
             <Input
               type="email"
               value={senderEmail}
@@ -615,7 +639,9 @@ export default function HomePage() {
               className="border-2"
             />
             {senderEmailVerified ? (
-              <p className="text-xs text-primary">{t('senderEmailVerified')}</p>
+              <p className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                {t('senderEmailVerified')}
+              </p>
             ) : (
               <div className="space-y-2">
                 <Button
@@ -628,7 +654,7 @@ export default function HomePage() {
                   {isSendingVerificationCode ? t("emailSending") : t("confirmSenderEmail")}
                 </Button>
                 {emailChallengeToken ? (
-                  <div className="flex gap-2">
+                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                     <Input
                       inputMode="numeric"
                       maxLength={6}
@@ -650,25 +676,31 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          <Input
-            type="email"
-            value={recipientEmail}
-            onChange={(e) => setRecipientEmail(e.target.value)}
-            placeholder={t('recipientEmail')}
-            className="border-2"
-          />
+          <div className="space-y-2 rounded-xl border border-border/70 bg-background/55 p-3">
+            <label className="text-xs font-medium text-muted-foreground">{t('recipientEmail')}</label>
+            <Input
+              type="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder={t('recipientEmail')}
+              className="border-2"
+            />
+            <p className="text-xs text-muted-foreground">{t('emailBody')}</p>
+          </div>
           <Textarea
             value={emailMessage}
             onChange={(e) => setEmailMessage(e.target.value)}
             placeholder={t('emailMessagePlaceholder')}
-            className="min-h-20 resize-none border-2"
+            className="min-h-24 resize-none border-2 md:col-span-2"
           />
-          <TurnstileChallenge onTokenChange={setCaptchaToken} />
+          <div className="md:col-span-2">
+            <TurnstileChallenge onTokenChange={setCaptchaToken} />
+          </div>
           <Button
             type="button"
             onClick={sendPasteEmail}
             disabled={!senderEmailVerified || !recipientEmail.trim() || !captchaToken || isSendingEmail}
-            className="w-full border-2 border-primary"
+            className="w-full border-2 border-primary md:col-span-2"
           >
             <Mail className="mr-2 h-4 w-4" />
             {isSendingEmail ? t("emailSending") : t("sendEmail")}
