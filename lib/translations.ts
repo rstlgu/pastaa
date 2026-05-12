@@ -177,7 +177,7 @@ export const translations = {
     
     // Homepage
     heroTitle: 'Condivisione Testo Sicura',
-    heroSubtitle: 'Condividi testo e codice in modo sicuro e invia messaggi cifrati con un editor open source',
+    heroSubtitle: 'Un pastebin con crittografia end-to-end, condivisione file, collaborazione in tempo reale e chat cifrata',
     sendButton: 'Invia',
     shareButton: 'Condividi',
     chatButton: 'Chat',
@@ -292,7 +292,7 @@ export const translations = {
     
     // Homepage
     appName: 'Pastaa',
-    appTagline: 'An open source editor for text/code sharing and message sending with end-to-end encryption',
+    appTagline: 'A pastebin with end-to-end encryption, file sharing, real-time collaboration and encrypted chat',
     textPlaceholder: 'Enter text...',
     encryptAndShare: 'Share',
     encrypting: 'Encrypting...',
