@@ -829,11 +829,11 @@ export default function Home() {
             >
               <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Users className="w-3 h-3" />
-                Multiplayer
+                {t('demoCollabBadge')}
               </motion.div>
-              <motion.h2 variants={itemVariants} className="text-3xl md:text-5xl font-bold font-righteous">Collaborazione in Tempo Reale</motion.h2>
+              <motion.h2 variants={itemVariants} className="text-3xl md:text-5xl font-bold font-righteous">{t('demoCollabTitle')}</motion.h2>
               <motion.p variants={itemVariants} className="text-lg text-muted-foreground leading-relaxed">
-                Vedi i cursori dei tuoi colleghi muoversi in tempo reale. Lavora insieme sullo stesso documento senza conflitti.
+                {t('demoCollabDesc')}
               </motion.p>
             </motion.div>
             
@@ -953,7 +953,7 @@ export default function Home() {
                 {t('runCommand')}
               </motion.p>
               <motion.div variants={itemVariants} className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <Link href="https://github.com/rstlgu/pastaa" target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:opacity-90 transition-opacity">
+                <Link href="https://github.com/pastaamaster/pastaa.git" target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:opacity-90 transition-opacity">
                   <Github className="w-5 h-5" />
                   GitHub Repo
                 </Link>
@@ -986,7 +986,7 @@ export default function Home() {
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link href="/terms" className="hover:text-primary transition-colors">{t('termsOfService')}</Link>
               <Link href="/privacy" className="hover:text-primary transition-colors">{t('privacyPolicy')}</Link>
-              <a href="https://github.com/rstlgu/pastaa" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
+              <a href="https://github.com/pastaamaster/pastaa.git" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
             </div>
           </div>
         </div>

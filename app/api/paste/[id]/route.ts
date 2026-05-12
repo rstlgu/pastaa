@@ -35,6 +35,13 @@ export async function GET(
       salt: paste.salt,
       hasPassword: paste.hasPassword,
       burnAfterReading: paste.burnAfterReading,
+      encryptedFileContent: paste.encryptedFileContent,
+      fileIv: paste.fileIv,
+      encryptedFileMetadata: paste.encryptedFileMetadata,
+      fileMetadataIv: paste.fileMetadataIv,
+      passwordFileIv: paste.passwordFileIv,
+      passwordFileMetadataIv: paste.passwordFileMetadataIv,
+      encryptedFiles: paste.encryptedFiles ? JSON.parse(paste.encryptedFiles) : null,
     };
 
     // Incrementa visualizzazioni e elimina se necessario

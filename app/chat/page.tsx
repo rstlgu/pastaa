@@ -8,6 +8,17 @@ import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { bytesToHex, deriveChatChannelId, deriveGroupKey } from "@/lib/chat-crypto";
+
+interface SavedChannel {
+  name: string;
+  hash: string;
+  groupKeyHex: string;
+}
+
+function getChannelSessionKey(channelName: string): string {
+  return `chat-session-${channelName}`;
+}
 
 export default function ChatHome() {
   useLanguage();
@@ -20,19 +31,34 @@ export default function ChatHome() {
 
   const handleJoinChannel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!channelName.trim() || !username.trim()) return;
+    const trimmedChannelName = channelName.trim();
+    const trimmedUsername = username.trim();
+    if (!trimmedChannelName || !trimmedUsername || !channelPassword) return;
 
     setIsJoining(true);
-    
-    const params = new URLSearchParams({
-      channel: channelName.trim(),
-      user: username.trim(),
-    });
-    
-    // Always save password (even if empty) to mark that user went through login
-    sessionStorage.setItem(`chat-pwd-${channelName.trim()}`, channelPassword);
-    
-    router.push(`/chat/room?${params.toString()}`);
+
+    try {
+      const channelHash = await deriveChatChannelId(trimmedChannelName, channelPassword);
+      const groupKey = await deriveGroupKey(trimmedChannelName, channelPassword);
+      const session: SavedChannel = {
+        name: trimmedChannelName,
+        hash: channelHash,
+        groupKeyHex: bytesToHex(groupKey),
+      };
+      
+      const params = new URLSearchParams({
+        channel: trimmedChannelName,
+        user: trimmedUsername,
+      });
+      
+      // Keep only derived room material for this tab session. The raw password is not stored.
+      sessionStorage.setItem(getChannelSessionKey(trimmedChannelName), JSON.stringify(session));
+      
+      router.push(`/chat/room?${params.toString()}`);
+    } catch (error) {
+      console.error("Unable to derive chat keys:", error);
+      setIsJoining(false);
+    }
   };
 
   return (
@@ -108,7 +134,7 @@ export default function ChatHome() {
                   type={showPassword ? "text" : "password"}
                   value={channelPassword}
                   onChange={(e) => setChannelPassword(e.target.value)}
-                  placeholder="Optional but recommended"
+                  placeholder="Required for E2E encryption"
                   className="w-full px-3 md:px-4 py-2.5 md:py-3 text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors pr-11"
                   autoComplete="off"
                 />
@@ -144,7 +170,7 @@ export default function ChatHome() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isJoining || !channelName.trim() || !username.trim()}
+              disabled={isJoining || !channelName.trim() || !username.trim() || !channelPassword}
               className="w-full py-3 md:py-4 mt-2 bg-primary text-primary-foreground font-bold text-sm md:text-base rounded-lg md:rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               {isJoining ? (
@@ -171,7 +197,7 @@ export default function ChatHome() {
           >
             <Shield className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
             <p className="text-xs md:text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Triple Encryption:</span> TLS + AES-256 + ChaCha20-Poly1305
+              <span className="font-medium text-foreground">E2E Encryption:</span> PBKDF2 + ChaCha20-Poly1305 over TLS
             </p>
           </motion.div>
         </motion.div>

@@ -57,10 +57,20 @@ export async function encryptText(
 ): Promise<{ encryptedContent: string; iv: string }> {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
-  
+
+  return encryptBytes(data.buffer, key);
+}
+
+/**
+ * Cifra dati binari usando AES-GCM
+ */
+export async function encryptBytes(
+  data: ArrayBuffer,
+  key: CryptoKey
+): Promise<{ encryptedContent: string; iv: string }> {
   // Genera IV casuale (12 bytes per GCM)
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  
+
   const encryptedBuffer = await crypto.subtle.encrypt(
     {
       name: "AES-GCM",
@@ -84,6 +94,20 @@ export async function decryptText(
   iv: string,
   key: CryptoKey
 ): Promise<string> {
+  const decryptedBuffer = await decryptBytes(encryptedContent, iv, key);
+
+  const decoder = new TextDecoder();
+  return decoder.decode(decryptedBuffer);
+}
+
+/**
+ * Decifra dati binari usando AES-GCM
+ */
+export async function decryptBytes(
+  encryptedContent: string,
+  iv: string,
+  key: CryptoKey
+): Promise<ArrayBuffer> {
   const encryptedBuffer = base64UrlToArrayBuffer(encryptedContent);
   const ivBuffer = base64UrlToArrayBuffer(iv);
 
@@ -96,8 +120,7 @@ export async function decryptText(
     encryptedBuffer
   );
 
-  const decoder = new TextDecoder();
-  return decoder.decode(decryptedBuffer);
+  return decryptedBuffer;
 }
 
 /**
@@ -147,9 +170,19 @@ export function generateSalt(): string {
 function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    const chunkChars = new Array<string>(chunk.length);
+
+    for (let j = 0; j < chunk.length; j++) {
+      chunkChars[j] = String.fromCharCode(chunk[j]);
+    }
+
+    binary += chunkChars.join("");
   }
+
   return btoa(binary)
     .replace(/\+/g, "-")
     .replace(/\//g, "_")

@@ -8,17 +8,25 @@ datasource db {
 }
 
 model Paste {
-  id                String    @id @default(uuid())
-  shortId           String    @unique
-  encryptedContent  String
-  iv                String
-  passwordIv        String?
-  salt              String?
-  hasPassword       Boolean   @default(false)
-  burnAfterReading  Boolean   @default(false)
-  expiresAt         DateTime?
-  createdAt         DateTime  @default(now())
-  views             Int       @default(0)
+  id                       String    @id @default(uuid())
+  shortId                  String    @unique
+  encryptedContent         String
+  iv                       String
+  passwordIv               String?
+  salt                     String?
+  hasPassword              Boolean   @default(false)
+  burnAfterReading         Boolean   @default(false)
+  expiresAt                DateTime?
+  createdAt                DateTime  @default(now())
+  views                    Int       @default(0)
+  encryptedFileContent     String?
+  fileIv                   String?
+  encryptedFileMetadata    String?
+  fileMetadataIv           String?
+  passwordFileIv           String?
+  passwordFileMetadataIv   String?
+  fileSize                 Int?
+  encryptedFiles           String?
 }
 
 model PublicPage {

@@ -1,9 +1,9 @@
 /**
- * ChatCrypt-style Triple Encryption
+ * Pastaa chat encryption helpers
  * 
  * Layer 1: TLS (handled by browser/server)
- * Layer 2: ECDH P-384 + AES-256-GCM (client-server) + RSA signature verification
- * Layer 3: ECDH Curve25519 + ChaCha20-Poly1305 (client-client, E2E)
+ * Layer 2: channel password -> PBKDF2-SHA256 -> shared room key
+ * Layer 3: ChaCha20-Poly1305 message encryption in the browser
  */
 
 import { p384 } from '@noble/curves/nist.js';
@@ -20,6 +20,9 @@ function toArrayBuffer(arr: Uint8Array): ArrayBuffer {
   return arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength) as ArrayBuffer;
 }
 import { utf8ToBytes, bytesToUtf8, bytesToHex, hexToBytes } from '@noble/ciphers/utils.js';
+
+const CHAT_CRYPTO_VERSION = 'pastaa-chat-v2';
+const CHAT_KDF_ITERATIONS = 250_000;
 
 // ============================================
 // LAYER 2: Client-Server Encryption (AES-256-GCM)
@@ -215,9 +218,48 @@ export function deriveLayer3SharedSecret(
   return combinedKey;
 }
 
-// Simple shared key derived only from channel password (for group chat)
-export function deriveGroupKey(channelPassword: string): Uint8Array {
-  return hashPassword(channelPassword + "-pastaa-chat-key");
+async function sha256Bytes(value: string): Promise<Uint8Array> {
+  const data = new TextEncoder().encode(value);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(hashBuffer);
+}
+
+export async function deriveChatChannelId(
+  channelName: string,
+  channelPassword: string
+): Promise<string> {
+  const normalizedChannelName = channelName.trim();
+  const channelSecret = `${CHAT_CRYPTO_VERSION}:channel:${normalizedChannelName}:${channelPassword}`;
+  const channelHash = await sha256Bytes(channelSecret);
+  return bytesToHex(channelHash);
+}
+
+// Shared room key derived in-browser. The server never receives the password or this key.
+export async function deriveGroupKey(
+  channelName: string,
+  channelPassword: string
+): Promise<Uint8Array> {
+  const normalizedChannelName = channelName.trim();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    toArrayBuffer(utf8ToBytes(channelPassword)),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  const salt = await sha256Bytes(`${CHAT_CRYPTO_VERSION}:salt:${normalizedChannelName}`);
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-256',
+      salt: toArrayBuffer(salt),
+      iterations: CHAT_KDF_ITERATIONS,
+    },
+    keyMaterial,
+    256
+  );
+
+  return new Uint8Array(derivedBits);
 }
 
 export function encryptLayer3(

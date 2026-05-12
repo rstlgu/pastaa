@@ -2,7 +2,7 @@
   <br />
   <img src="public/logo.svg" alt="Pastaa Logo" width="80" height="80" />
   <h1>Pastaa</h1>
-  <p><strong>Secure Text Sharing & Encrypted Chat</strong></p>
+  <p><strong>Secure Text Sharing, Real-time Collaboration & Encrypted Chat</strong></p>
   <br />
   <p>
     <a href="#features">Features</a> •
@@ -24,17 +24,21 @@
 - **Zero Registration** — No accounts, no tracking, no cookies
 - **Burn After Reading** — Automatic deletion after first view
 - **Password Protection** — Optional second layer of security
+- **Encrypted Attachments** — Files are encrypted client-side before upload
+- **Email Sharing** — Open your mail client with a ready-to-send encrypted link
 
 ### Share (Real-time Collaboration)
 - **Live Collaboration** — Multiple users editing simultaneously
 - **Presence Indicators** — See who's viewing in real-time
+- **Remote Cursors** — See collaborators' cursors move in real time
 - **Custom Expiry** — Set content lifetime: 1 hour to 30 days, or never
 - **Code Editor** — Syntax highlighting for 12+ languages
 
 ### Chat (Encrypted Group Chat)
-- **Triple Encryption** — TLS + AES-256-GCM + ChaCha20-Poly1305
+- **End-to-End Encryption** — PBKDF2-SHA256 + ChaCha20-Poly1305 over TLS
 - **No Storage** — Messages are never stored on the server
-- **Channel Password** — Encryption key derived from password you choose
+- **Required Channel Password** — Room keys are derived in the browser
+- **Private Channel IDs** — Realtime channel identifiers depend on channel name + password
 - **Real-time** — Instant message delivery via WebSockets
 - **Zero Knowledge** — Server cannot read your messages
 
@@ -53,24 +57,28 @@ Pastaa Chat is inspired by [ChatCrypt](https://www.chatcrypt.com) and provides s
 └─────────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────────┐
-│                    LAYER 2: Transport                           │
-│  WebSocket connection via Pusher (encrypted channel)            │
+│              LAYER 2: Browser Key Derivation                    │
+│  channel name + required password -> PBKDF2-SHA256              │
+│  250,000 iterations -> 256-bit room key                         │
 └─────────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────────┐
 │                LAYER 3: End-to-End (E2E)                        │
 │  ChaCha20-Poly1305 encryption                                   │
-│  Key = derive(channel_password)                                 │
+│  Key never leaves the browser                                   │
 │  Only users with the same password can decrypt                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+The realtime transport is handled by Pusher. Pastaa sends only encrypted message payloads and metadata needed for delivery. The raw channel password is never sent to the server and is not stored in `sessionStorage`; the browser keeps only derived room material for the current tab session.
 
 ### Chat Features
 
 | Feature | Description |
 |---------|-------------|
 | Channel-based | Create or join channels by name |
-| Password encryption | Messages encrypted with channel password |
+| Required password | Messages encrypted with a room key derived from the channel password |
+| Private channel ID | Pusher channel ID is derived from channel name + password |
 | No persistence | Messages exist only during session |
 | Telegram-style avatars | Colored initials for each user |
 | Real-time presence | See who's in the channel |
@@ -105,15 +113,15 @@ Pastaa Chat is inspired by [ChatCrypt](https://www.chatcrypt.com) and provides s
 
 ```bash
 # Clone the repository
-git clone https://github.com/rstlgu/pastaa.git
+git clone https://github.com/pastaamaster/pastaa.git
 cd pastaa
 
 # Install dependencies
 npm install
 
 # Configure environment
-cp env.example .env
-# Edit .env with your settings
+cp .env.example .env.local
+# Edit .env.local with your settings
 
 # Setup database
 npx prisma db push
@@ -127,14 +135,21 @@ Open [http://localhost:3000](http://localhost:3000)
 ### Environment Variables
 
 ```env
-# Database (required)
-DATABASE_URL="postgresql://user:password@host:5432/database"
+# Database (required for encrypted pastes and share pages)
+DATABASE_URL=postgres://USER:PASSWORD@HOST:6543/postgres?sslmode=require&pgbouncer=true
+
+# Public app URL (recommended for email links)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Pusher (required for Chat)
-PUSHER_APP_ID="your_app_id"
-PUSHER_SECRET="your_secret"
-NEXT_PUBLIC_PUSHER_KEY="your_key"
-NEXT_PUBLIC_PUSHER_CLUSTER="eu"
+NEXT_PUBLIC_PUSHER_KEY=your_key
+NEXT_PUBLIC_PUSHER_CLUSTER=eu
+PUSHER_APP_ID=your_app_id
+PUSHER_SECRET=your_secret
+
+# Resend (optional, for Send by email)
+RESEND_API_KEY=
+RESEND_FROM=
 ```
 
 ---
@@ -145,15 +160,18 @@ NEXT_PUBLIC_PUSHER_CLUSTER="eu"
 
 ```bash
 # Clone the repository
-git clone https://github.com/rstlgu/pastaa.git
+git clone https://github.com/pastaamaster/pastaa.git
 cd pastaa
 
 # Create .env file with Pusher credentials (for Chat)
 cat > .env << EOF
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 PUSHER_APP_ID=your_app_id
 PUSHER_SECRET=your_secret
 NEXT_PUBLIC_PUSHER_KEY=your_key
 NEXT_PUBLIC_PUSHER_CLUSTER=eu
+RESEND_API_KEY=
+RESEND_FROM=
 EOF
 
 # Start the stack
@@ -177,11 +195,16 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
 
 ```bash
 # Build the image
-docker build -t pastaa .
+docker build -t pastaa \
+  --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
+  --build-arg NEXT_PUBLIC_PUSHER_KEY="your_key" \
+  --build-arg NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
+  .
 
 # Run with external database
 docker run -p 3000:3000 \
   -e DATABASE_URL="postgresql://user:pass@host:5432/db" \
+  -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
   -e PUSHER_APP_ID="your_app_id" \
   -e PUSHER_SECRET="your_secret" \
   -e NEXT_PUBLIC_PUSHER_KEY="your_key" \
@@ -217,7 +240,8 @@ docker run -p 3000:3000 \
 |---------|-----------|----------|
 | Send (Paste) | AES-GCM | 256-bit |
 | Chat Messages | ChaCha20-Poly1305 | 256-bit |
-| Key Derivation | Custom hash function | - |
+| Chat Key Derivation | PBKDF2-SHA256, 250,000 iterations | 256-bit |
+| Chat Channel ID | SHA-256(channel name + password) | 256-bit |
 
 ### Security Guarantees
 
@@ -226,9 +250,19 @@ docker run -p 3000:3000 \
 | Keys transmitted to server | Never |
 | Server can read your content | No |
 | Chat messages stored | Never |
+| Raw chat password stored locally | No |
 | User tracking | None |
 | Cookies | None |
 | Automatic expiry deletion | Yes |
+
+### Chat Security Model
+
+Pastaa Chat uses a shared-room E2E model:
+
+- The channel password is required and never leaves the browser.
+- The browser derives a 256-bit room key with PBKDF2-SHA256 and uses it to encrypt/decrypt messages with ChaCha20-Poly1305.
+- The server and Pusher receive only encrypted message payloads, nonces, delivery metadata, and a channel identifier derived from the channel name + password.
+- Anyone with the same channel name and password can join and decrypt messages in that room. Pastaa does not provide Signal-style per-device identity verification or per-message forward secrecy.
 
 ### Zero Knowledge Architecture
 
@@ -273,5 +307,5 @@ MIT License — Use freely!
 ---
 
 <div align="center">
-  <sub>Built with care by <a href="https://github.com/rstlgu">rstlgu</a></sub>
+  <sub>Built with care by <a href="https://github.com/pastaamaster">pastaamaster</a></sub>
 </div>

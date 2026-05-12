@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,8 +18,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Lock, Copy, Check, Clock, Flame, Share2 } from "lucide-react";
-import { generateKey, exportKey, encryptText } from "@/lib/crypto";
+import { Lock, Copy, Check, Clock, Flame, Share2, Paperclip, X, Mail } from "lucide-react";
+import { generateKey, exportKey, encryptText, encryptBytes } from "@/lib/crypto";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { E2EBadge } from "@/components/e2e-badge";
 import { PastaLogo } from "@/components/pasta-logo";
@@ -27,11 +27,37 @@ import { useLanguage } from "@/components/language-provider";
 import { FeatureBadge } from "@/components/feature-badge";
 import { GitHubBadge } from "@/components/github-badge";
 import Link from "next/link";
+import { toast } from "sonner";
+
+const MAX_TEXT_SIZE = 100 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_COUNT = 10;
+
+interface EncryptedFilePayload {
+  encryptedContent: string;
+  iv: string;
+  encryptedMetadata: string;
+  metadataIv: string;
+  passwordIv?: string | null;
+  passwordMetadataIv?: string | null;
+  size: number;
+}
+
+function formatFileSize(size: number): string {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getTotalFileSize(files: File[]): number {
+  return files.reduce((total, file) => total + file.size, 0);
+}
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [text, setText] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState("");
   const [usePassword, setUsePassword] = useState(false);
   const [burnAfterReading, setBurnAfterReading] = useState(false);
   const [showExpiry, setShowExpiry] = useState(false);
@@ -40,12 +66,16 @@ export default function HomePage() {
   const [pasteId, setPasteId] = useState("");
   const [shortId, setShortId] = useState("");
   const [keyString, setKeyString] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [copied, setCopied] = useState(false);
   
   // Feature badges state
   const [showBurnBadge, setShowBurnBadge] = useState(false);
   const [showPasswordBadge, setShowPasswordBadge] = useState(false);
   const [showExpiryBadge, setShowExpiryBadge] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check localStorage for first-time feature usage
   useEffect(() => {
@@ -76,6 +106,30 @@ export default function HomePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const normalizedPassword = password.trim();
+    const totalFileSize = getTotalFileSize(selectedFiles);
+
+    if (!text.trim() && selectedFiles.length === 0) {
+      alert(t('contentRequired'));
+      return;
+    }
+
+    if (new TextEncoder().encode(text).byteLength > MAX_TEXT_SIZE) {
+      alert(t('textTooLarge'));
+      return;
+    }
+
+    if (usePassword && !normalizedPassword) {
+      alert(t('passwordEmptyError'));
+      return;
+    }
+
+    if (selectedFiles.length > MAX_FILE_COUNT || totalFileSize > MAX_FILE_SIZE) {
+      alert(t('fileTooLarge'));
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -83,18 +137,55 @@ export default function HomePage() {
       const keyString = await exportKey(key);
 
       const { encryptedContent: mainEncrypted, iv: mainIv } = await encryptText(text, key);
-      
+
       let finalEncrypted = mainEncrypted;
       let passwordIv = null;
       let salt = null;
+      let encryptedFiles: EncryptedFilePayload[] = [];
 
-      if (usePassword && password) {
+      for (const file of selectedFiles) {
+        const fileBuffer = await file.arrayBuffer();
+        const fileEncryption = await encryptBytes(fileBuffer, key);
+        const metadataEncryption = await encryptText(
+          JSON.stringify({
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+          }),
+          key
+        );
+
+        encryptedFiles.push({
+          encryptedContent: fileEncryption.encryptedContent,
+          iv: fileEncryption.iv,
+          encryptedMetadata: metadataEncryption.encryptedContent,
+          metadataIv: metadataEncryption.iv,
+          size: file.size,
+        });
+      }
+
+      if (usePassword && normalizedPassword) {
         const { generateSalt, deriveKeyFromPassword, encryptText: encrypt } = await import("@/lib/crypto");
         salt = generateSalt();
-        const passwordKey = await deriveKeyFromPassword(password, salt);
+        const passwordKey = await deriveKeyFromPassword(normalizedPassword, salt);
         const secondEncryption = await encrypt(mainEncrypted, passwordKey);
         finalEncrypted = secondEncryption.encryptedContent;
         passwordIv = secondEncryption.iv;
+
+        encryptedFiles = await Promise.all(
+          encryptedFiles.map(async (file) => {
+            const filePasswordEncryption = await encrypt(file.encryptedContent, passwordKey);
+            const metadataPasswordEncryption = await encrypt(file.encryptedMetadata, passwordKey);
+
+            return {
+              ...file,
+              encryptedContent: filePasswordEncryption.encryptedContent,
+              encryptedMetadata: metadataPasswordEncryption.encryptedContent,
+              passwordIv: filePasswordEncryption.iv,
+              passwordMetadataIv: metadataPasswordEncryption.iv,
+            };
+          })
+        );
       }
 
       const response = await fetch("/api/paste", {
@@ -105,9 +196,11 @@ export default function HomePage() {
           iv: mainIv,
           passwordIv,
           salt,
-          hasPassword: usePassword,
+          hasPassword: usePassword && Boolean(normalizedPassword),
           burnAfterReading,
           expiresIn: showExpiry ? expiresIn : "1d",
+          encryptedFiles,
+          fileSize: totalFileSize,
         }),
       });
 
@@ -133,8 +226,12 @@ export default function HomePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function getShareUrl(): string {
+    return `${window.location.origin}/v/${shortId}#${keyString}`;
+  }
+
   async function shareLink() {
-    const url = `${window.location.origin}/v/${shortId}#${keyString}`;
+    const url = getShareUrl();
     
     if (navigator.share) {
       try {
@@ -153,16 +250,125 @@ export default function HomePage() {
     }
   }
 
+  async function sendPasteEmail() {
+    const to = recipientEmail.trim();
+    if (!to || !shortId) return;
+
+    setIsSendingEmail(true);
+    try {
+      const response = await fetch("/api/share-paste-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to,
+          shareUrl: getShareUrl(),
+          shortId,
+          message: emailMessage.trim(),
+          subject: t("emailSubject"),
+          locale: language,
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+      if (!response.ok) {
+        if (response.status === 503) {
+          toast.error(t("emailNotConfigured"));
+        } else {
+          toast.error(typeof data.error === "string" ? data.error : t("emailSendFailed"));
+        }
+        return;
+      }
+
+      toast.success(t("emailSent"));
+    } catch {
+      toast.error(t("emailSendFailed"));
+    } finally {
+      setIsSendingEmail(false);
+    }
+  }
+
   function reset() {
     setText("");
     setPassword("");
+    setSelectedFiles([]);
+    setFileError("");
     setUsePassword(false);
     setBurnAfterReading(false);
     setShowExpiry(false);
-    setExpiresIn("24h");
+    setExpiresIn("1d");
     setPasteId("");
     setShortId("");
     setKeyString("");
+    setRecipientEmail("");
+    setEmailMessage("");
+    setIsSendingEmail(false);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+
+    if (files.length === 0) {
+      setFileError("");
+      return;
+    }
+
+    const nextFiles = [...selectedFiles, ...files].slice(0, MAX_FILE_COUNT + 1);
+    const totalFileSize = getTotalFileSize(nextFiles);
+
+    if (nextFiles.length > MAX_FILE_COUNT || totalFileSize > MAX_FILE_SIZE) {
+      setFileError(t('fileTooLarge'));
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedFiles(nextFiles);
+    setFileError("");
+    e.target.value = "";
+  }
+
+  function removeSelectedFile(index: number) {
+    setSelectedFiles((currentFiles) => currentFiles.filter((_, fileIndex) => fileIndex !== index));
+    setFileError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function renderEmailShareForm() {
+    return (
+      <div className="rounded-lg border-2 bg-muted/40 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Mail className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-sm font-semibold">{t('sendByEmail')}</p>
+            <p className="text-xs text-muted-foreground">{t('emailShareDescription')}</p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Input
+            type="email"
+            value={recipientEmail}
+            onChange={(e) => setRecipientEmail(e.target.value)}
+            placeholder={t('recipientEmail')}
+            className="border-2"
+          />
+          <Textarea
+            value={emailMessage}
+            onChange={(e) => setEmailMessage(e.target.value)}
+            placeholder={t('emailMessagePlaceholder')}
+            className="min-h-20 resize-none border-2"
+          />
+          <Button
+            type="button"
+            onClick={sendPasteEmail}
+            disabled={!recipientEmail.trim() || isSendingEmail}
+            className="w-full border-2 border-primary"
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            {isSendingEmail ? t("emailSending") : t("sendEmail")}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -184,7 +390,7 @@ export default function HomePage() {
           </Link>
           
           <div className="flex items-center gap-3">
-            <E2EBadge />
+            <E2EBadge showHowItWorks={false} />
             <GitHubBadge />
             <ThemeToggle />
           </div>
@@ -203,9 +409,63 @@ export default function HomePage() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={t('textPlaceholder')}
-                  className="min-h-[70vh] text-base border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none pb-24"
-                  required
+                  className="min-h-[70vh] text-base border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none pb-40"
                 />
+
+                <Input
+                  ref={fileInputRef}
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                <AnimatePresence>
+                  {selectedFiles.length > 0 && (
+                    <motion.div
+                      key="selected-files"
+                      initial={{ y: 20, opacity: 0, scale: 0.95 }}
+                      animate={{ y: 0, opacity: 1, scale: 1 }}
+                      exit={{ y: 20, opacity: 0, scale: 0.95 }}
+                      className="absolute bottom-32 left-4 right-4 md:left-auto md:w-96 rounded-lg border-2 border-primary bg-card/95 p-3 backdrop-blur-sm"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                          <Paperclip className="h-5 w-5 text-primary" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium">
+                              {selectedFiles.length}/10 {t('attachedFiles')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(getTotalFileSize(selectedFiles))} / 10 MB • {t('fileWillBeEncrypted')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="max-h-32 overflow-y-auto pr-1">
+                          {selectedFiles.map((file, index) => (
+                            <div key={`${file.name}-${file.size}-${index}`} className="flex items-center gap-2 py-1">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-medium">{file.name}</p>
+                                <p className="text-[11px] text-muted-foreground">{formatFileSize(file.size)}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeSelectedFile(index)}
+                                className="h-7 w-7"
+                                aria-label={t('removeFile')}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Floating Options - Above Bottom Controls */}
                 <div className="absolute bottom-20 left-4 right-4 md:left-4 md:right-auto flex flex-col md:flex-row gap-3 items-stretch md:items-end">
@@ -320,6 +580,24 @@ export default function HomePage() {
                         </TooltipTrigger>
                         <TooltipContent className="hidden md:block">{t('expirationTooltip')}</TooltipContent>
                       </Tooltip>
+
+                      {/* File Upload */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant={selectedFiles.length > 0 ? "default" : "outline"}
+                            size="icon"
+                            asChild
+                            className="rounded-full border-2 active:scale-95 transition-transform"
+                          >
+                            <label htmlFor="file-upload" className="cursor-pointer">
+                              <Paperclip className="h-5 w-5" />
+                            </label>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="hidden md:block">{t('attachFile')}</TooltipContent>
+                      </Tooltip>
                     </motion.div>
 
                     {/* Right - Submit Button */}
@@ -330,7 +608,7 @@ export default function HomePage() {
                       <Button
                         type="submit"
                         className="border-2 border-primary"
-                        disabled={isLoading || !text}
+                        disabled={isLoading || (!text.trim() && selectedFiles.length === 0)}
                       >
                         {isLoading ? (
                           <span className="flex items-center gap-2">
@@ -351,8 +629,11 @@ export default function HomePage() {
 
               {/* Info Text - Outside Form */}
               <p className="text-xs text-muted-foreground mt-3 text-center">
-                {t('maxSize')} • {t('encryption')}
+                {t('maxSize')} • {t('maxFileSize')} • {t('encryption')}
               </p>
+              {fileError && (
+                <p className="mt-2 text-center text-xs text-destructive">{fileError}</p>
+              )}
             </form>
           </motion.div>
         ) : (
@@ -401,6 +682,7 @@ export default function HomePage() {
                       )}
                     </Button>
                   </div>
+                  {renderEmailShareForm()}
                 </div>
               </div>
             </motion.div>
@@ -451,6 +733,7 @@ export default function HomePage() {
                       )}
                     </Button>
                   </div>
+                  {renderEmailShareForm()}
 
                   {/* Action Buttons */}
                   <div className="space-y-3">

@@ -7,6 +7,9 @@ import { Github, ExternalLink, Code, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/language-provider";
 
+const GITHUB_REPO_URL = "https://github.com/pastaamaster/pastaa.git";
+const GITHUB_REPO_LABEL = "github.com/pastaamaster/pastaa";
+
 interface GitHubBadgeProps {
   show?: boolean;
   onClose?: () => void;
@@ -116,13 +119,13 @@ export function GitHubBadge({ show: showProp, onClose }: GitHubBadgeProps) {
 
                 {/* GitHub Link */}
                 <a 
-                  href="https://github.com/rstlgu/pastaa.git" 
+                  href={GITHUB_REPO_URL} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 p-3 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border-2 border-primary/30"
                 >
                   <Github className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-xs">github.com/rstlgu/pastaa</span>
+                  <span className="font-semibold text-xs">{GITHUB_REPO_LABEL}</span>
                   <ExternalLink className="h-3 w-3 text-primary" />
                 </a>
               </div>
@@ -195,13 +198,13 @@ export function GitHubBadge({ show: showProp, onClose }: GitHubBadgeProps) {
 
                     {/* GitHub Link */}
                     <a 
-                      href="https://github.com/rstlgu/pastaa.git" 
+                      href={GITHUB_REPO_URL} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 p-4 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border-2 border-primary/30"
                     >
                       <Github className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-sm">github.com/rstlgu/pastaa</span>
+                      <span className="font-semibold text-sm">{GITHUB_REPO_LABEL}</span>
                       <ExternalLink className="h-4 w-4 text-primary" />
                     </a>
 

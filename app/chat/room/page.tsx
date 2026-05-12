@@ -10,11 +10,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Pusher from "pusher-js";
 import {
   generateLayer3KeyPair,
+  deriveChatChannelId,
   deriveGroupKey,
   encryptLayer3,
   decryptLayer3,
-  hashChannelName,
   bytesToHex,
+  hexToBytes,
+  randomBytes,
   Layer3Keys,
 } from "@/lib/chat-crypto";
 import type { ChatMessageEvent, MemberJoinEvent, MemberLeaveEvent, MemberSyncEvent } from "@/lib/pusher";
@@ -38,8 +40,8 @@ interface ChatMessage {
 
 interface ChannelData {
   name: string;
-  password: string;
   hash: string;
+  groupKey: Uint8Array;
   messages: ChatMessage[];
   members: Map<string, ChatMember>;
   keys: Layer3Keys;
@@ -50,7 +52,25 @@ interface ChannelData {
 
 interface SavedChannel {
   name: string;
-  password: string;
+  hash: string;
+  groupKeyHex: string;
+}
+
+const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
+const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+
+function getChannelSessionKey(channelName: string): string {
+  return `chat-session-${channelName}`;
+}
+
+function isSavedChannel(value: unknown): value is SavedChannel {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<SavedChannel>;
+  return (
+    typeof candidate.name === "string" &&
+    typeof candidate.hash === "string" &&
+    typeof candidate.groupKeyHex === "string"
+  );
 }
 
 function ChatRoomContent() {
@@ -85,7 +105,8 @@ function ChatRoomContent() {
   const saveChannelsToStorage = useCallback((channelsMap: Map<string, ChannelData>) => {
     const savedChannels: SavedChannel[] = Array.from(channelsMap.values()).map(ch => ({
       name: ch.name,
-      password: ch.password,
+      hash: ch.hash,
+      groupKeyHex: bytesToHex(ch.groupKey),
     }));
     sessionStorage.setItem('chat-channels', JSON.stringify(savedChannels));
   }, []);
@@ -95,7 +116,9 @@ function ChatRoomContent() {
     const saved = sessionStorage.getItem('chat-channels');
     if (!saved) return [];
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(isSavedChannel);
     } catch {
       return [];
     }
@@ -134,9 +157,8 @@ function ChatRoomContent() {
       return;
     }
 
-    // Check if user has logged in for this channel
-    const passwordKey = `chat-pwd-${initialChannelName}`;
-    const hasLoggedIn = sessionStorage.getItem(passwordKey) !== null;
+    // Check if user has derived the room key in the join screen.
+    const hasLoggedIn = sessionStorage.getItem(getChannelSessionKey(initialChannelName)) !== null;
     
     if (!hasLoggedIn) {
       router.push("/chat");
@@ -154,7 +176,7 @@ function ChatRoomContent() {
   }, [activeChannel?.messages, activeChannel?.messages.length, activeChannel?.name]);
 
   // Connect to a channel
-  const connectToChannel = useCallback(async (channelName: string, password: string) => {
+  const connectToChannel = useCallback(async (channelName: string, hash: string, groupKey: Uint8Array) => {
     if (channels.has(channelName)) {
       // Already connected, just switch to it
       setActiveChannelName(channelName);
@@ -173,13 +195,43 @@ function ChatRoomContent() {
     try {
       // Generate keys and user ID
       const keys = generateLayer3KeyPair();
-      const userId = `user-${Math.random().toString(36).slice(2, 11)}`;
-      const hash = await hashChannelName(channelName);
+      const userId = `user-${bytesToHex(randomBytes(9))}`;
+
+      if (!PUSHER_KEY || !PUSHER_CLUSTER) {
+        const channelData: ChannelData = {
+          name: channelName,
+          hash,
+          groupKey,
+          messages: [{
+            id: `system-config-${channelName}`,
+            from: "system",
+            fromUsername: "System",
+            content: "Realtime chat is not configured. Set NEXT_PUBLIC_PUSHER_KEY and NEXT_PUBLIC_PUSHER_CLUSTER, then restart the dev server.",
+            timestamp: new Date(),
+            encrypted: false,
+            isSystem: true,
+          }],
+          members: new Map(),
+          keys,
+          userId,
+          isConnected: false,
+          unreadCount: 0,
+        };
+
+        setChannels(prev => {
+          const updated = new Map(prev);
+          updated.set(channelName, channelData);
+          saveChannelsToStorage(updated);
+          return updated;
+        });
+        setActiveChannelName(channelName);
+        return;
+      }
 
       // Initialize Pusher if needed
       if (!pusherRef.current) {
-        pusherRef.current = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+        pusherRef.current = new Pusher(PUSHER_KEY, {
+          cluster: PUSHER_CLUSTER,
           authEndpoint: "/api/chat/auth",
         });
       }
@@ -191,8 +243,8 @@ function ChatRoomContent() {
       // Create channel data
       const channelData: ChannelData = {
         name: channelName,
-        password,
         hash,
+        groupKey,
         messages: [],
         members: new Map(),
         keys,
@@ -262,8 +314,7 @@ function ChatRoomContent() {
           let decryptionFailed = true;
           
           try {
-            const groupKey = deriveGroupKey(password);
-            const decryptedContent = decryptLayer3(data.encryptedContent, data.nonce, groupKey);
+            const decryptedContent = decryptLayer3(data.encryptedContent, data.nonce, ch.groupKey);
             if (decryptedContent) {
               content = decryptedContent;
               decryptionFailed = false;
@@ -397,22 +448,32 @@ function ChatRoomContent() {
     
     // If we have the initial channel, add it if not in saved
     if (initialChannelName) {
-      const passwordKey = `chat-pwd-${initialChannelName}`;
-      const password = sessionStorage.getItem(passwordKey) || "";
+      const sessionValue = sessionStorage.getItem(getChannelSessionKey(initialChannelName));
+      let initialSession: SavedChannel | null = null;
+      if (sessionValue) {
+        try {
+          const parsed = JSON.parse(sessionValue);
+          initialSession = isSavedChannel(parsed) ? parsed : null;
+        } catch {
+          initialSession = null;
+        }
+      }
       
       const hasChannel = savedChannels.some(ch => ch.name === initialChannelName);
-      if (!hasChannel) {
-        savedChannels.unshift({ name: initialChannelName, password });
+      if (!hasChannel && initialSession) {
+        savedChannels.unshift(initialSession);
       }
 
       // Connect to initial channel
-      connectToChannel(initialChannelName, password);
+      if (initialSession) {
+        connectToChannel(initialChannelName, initialSession.hash, hexToBytes(initialSession.groupKeyHex));
+      }
     }
 
     // Connect to other saved channels
     savedChannels.forEach(ch => {
       if (ch.name !== initialChannelName) {
-        setTimeout(() => connectToChannel(ch.name, ch.password), 100);
+        setTimeout(() => connectToChannel(ch.name, ch.hash, hexToBytes(ch.groupKeyHex)), 100);
       }
     });
   }, [isReady]);
@@ -422,7 +483,7 @@ function ChatRoomContent() {
     e.preventDefault();
     if (!inputMessage.trim() || !activeChannel || !activeChannel.isConnected) return;
 
-    const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const messageId = `msg-${Date.now()}-${bytesToHex(randomBytes(9))}`;
     const content = inputMessage.trim();
     
     // Clear input immediately
@@ -450,8 +511,7 @@ function ChatRoomContent() {
     });
 
     // Encrypt and send
-    const groupKey = deriveGroupKey(activeChannel.password);
-    const { ciphertext, nonce } = encryptLayer3(content, groupKey);
+    const { ciphertext, nonce } = encryptLayer3(content, activeChannel.groupKey);
 
     try {
       await fetch("/api/chat/send", {
@@ -479,12 +539,19 @@ function ChatRoomContent() {
 
     const channelName = newChannelName.trim();
     const password = newChannelPassword;
+    if (!password) return;
 
-    // Save password to sessionStorage
-    sessionStorage.setItem(`chat-pwd-${channelName}`, password);
+    const hash = await deriveChatChannelId(channelName, password);
+    const groupKey = await deriveGroupKey(channelName, password);
+    const session: SavedChannel = {
+      name: channelName,
+      hash,
+      groupKeyHex: bytesToHex(groupKey),
+    };
+    sessionStorage.setItem(getChannelSessionKey(channelName), JSON.stringify(session));
 
     // Connect to channel
-    await connectToChannel(channelName, password);
+    await connectToChannel(channelName, hash, groupKey);
 
     // Reset form
     setNewChannelName("");
@@ -534,8 +601,8 @@ function ChatRoomContent() {
       return updated;
     });
 
-    // Remove password
-    sessionStorage.removeItem(`chat-pwd-${channelName}`);
+    // Remove derived room material for this browser session.
+    sessionStorage.removeItem(getChannelSessionKey(channelName));
   };
 
   // Cleanup on unmount
@@ -781,7 +848,7 @@ function ChatRoomContent() {
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Type a message..."
+                    placeholder={activeChannel.isConnected ? "Type a message..." : "Connecting to realtime..."}
                     className="w-full pl-4 pr-14 py-3 bg-muted border-2 border-transparent focus:border-primary rounded-full outline-none transition-colors text-base"
                     disabled={!activeChannel.isConnected}
                   />
@@ -805,6 +872,11 @@ function ChatRoomContent() {
                     </svg>
                 </button>
               </div>
+                {!activeChannel.isConnected && (
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Waiting for realtime connection. Check the system message above if it does not connect.
+                  </p>
+                )}
             </form>
             </div>
           </div>
@@ -904,7 +976,7 @@ function ChatRoomContent() {
                         type={showNewPassword ? "text" : "password"}
                         value={newChannelPassword}
                         onChange={(e) => setNewChannelPassword(e.target.value)}
-                        placeholder="Optional"
+                        placeholder="Required"
                         className="w-full px-4 py-2.5 bg-muted border-2 border-transparent focus:border-primary rounded-lg outline-none transition-colors pr-11"
                       />
                       <button
@@ -926,7 +998,7 @@ function ChatRoomContent() {
                     </button>
                     <button
                       type="submit"
-                      disabled={!newChannelName.trim()}
+                      disabled={!newChannelName.trim() || !newChannelPassword}
                       className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Join Channel

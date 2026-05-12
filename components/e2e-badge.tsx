@@ -6,7 +6,12 @@ import { Lock, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/language-provider";
 
-export function E2EBadge() {
+interface E2EBadgeProps {
+  /** Se false, nel popover resta solo titolo e sottotitolo (niente “Come funziona” / passi 1–3). */
+  showHowItWorks?: boolean;
+}
+
+export function E2EBadge({ showHowItWorks = true }: E2EBadgeProps) {
   const { t } = useLanguage();
   const [showE2EInfo, setShowE2EInfo] = useState(false);
   const [showDesktopCard, setShowDesktopCard] = useState(false);
@@ -52,7 +57,7 @@ export function E2EBadge() {
           >
             <div className="bg-card border-2 border-green-500 rounded-xl shadow-2xl p-6">
               {/* Header */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className={`flex items-center gap-3 ${showHowItWorks ? "mb-4" : ""}`}>
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-green-500/20 border-2 border-green-500 rounded-full flex-shrink-0">
                   <Lock className="h-6 w-6 text-green-500" />
                 </div>
@@ -62,51 +67,52 @@ export function E2EBadge() {
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="space-y-3">
-                <div>
-                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-green-500" />
-                    {t('howItWorks')}
-                  </h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t('e2eDescription')}
-                  </p>
-                </div>
+              {showHowItWorks ? (
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-green-500" />
+                      {t('howItWorks')}
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {t('e2eDescription')}
+                    </p>
+                  </div>
 
-                <div className="bg-muted rounded-lg p-3 border">
-                  <h5 className="font-semibold text-xs mb-2">{t('howItWorks')}:</h5>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
-                        1
+                  <div className="bg-muted rounded-lg p-3 border">
+                    <h5 className="font-semibold text-xs mb-2">{t('howItWorks')}:</h5>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
+                          1
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium">{t('clientEncryption')}</p>
+                          <p className="text-[10px] text-muted-foreground">{t('clientEncryptionDesc')}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-medium">{t('clientEncryption')}</p>
-                        <p className="text-[10px] text-muted-foreground">{t('clientEncryptionDesc')}</p>
+                      <div className="flex gap-2">
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
+                          2
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium">{t('keyInUrl')}</p>
+                          <p className="text-[10px] text-muted-foreground">{t('keyInUrlDesc')}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
-                        2
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium">{t('keyInUrl')}</p>
-                        <p className="text-[10px] text-muted-foreground">{t('keyInUrlDesc')}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
-                        3
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium">{t('localDecryption')}</p>
-                        <p className="text-[10px] text-muted-foreground">{t('localDecryptionDesc')}</p>
+                      <div className="flex gap-2">
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold">
+                          3
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium">{t('localDecryption')}</p>
+                          <p className="text-[10px] text-muted-foreground">{t('localDecryptionDesc')}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           </motion.div>
         )}
@@ -148,50 +154,53 @@ export function E2EBadge() {
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2 flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-green-500" />
-                      {t('howItWorks')}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {t('e2eDescription')}
-                    </p>
-                  </div>
+                  {showHowItWorks ? (
+                    <>
+                      <div>
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-green-500" />
+                          {t('howItWorks')}
+                        </h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {t('e2eDescription')}
+                        </p>
+                      </div>
 
-                  <div className="bg-muted rounded-lg p-4 border-2">
-                    <h4 className="font-semibold text-sm mb-3">{t('howItWorks')}:</h4>
-                    <div className="space-y-3">
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
-                          1
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{t('clientEncryption')}</p>
-                          <p className="text-xs text-muted-foreground">{t('clientEncryptionDesc')}</p>
+                      <div className="bg-muted rounded-lg p-4 border-2">
+                        <h4 className="font-semibold text-sm mb-3">{t('howItWorks')}:</h4>
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
+                              1
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{t('clientEncryption')}</p>
+                              <p className="text-xs text-muted-foreground">{t('clientEncryptionDesc')}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
+                              2
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{t('keyInUrl')}</p>
+                              <p className="text-xs text-muted-foreground">{t('keyInUrlDescLong')}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
+                              3
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{t('localDecryption')}</p>
+                              <p className="text-xs text-muted-foreground">{t('localDecryptionDescLong')}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
-                          2
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{t('keyInUrl')}</p>
-                          <p className="text-xs text-muted-foreground">{t('keyInUrlDescLong')}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
-                          3
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{t('localDecryption')}</p>
-                          <p className="text-xs text-muted-foreground">{t('localDecryptionDescLong')}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </>
+                  ) : null}
 
                   <Button 
                     onClick={() => setShowE2EInfo(false)} 
