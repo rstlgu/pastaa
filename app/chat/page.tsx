@@ -21,7 +21,7 @@ function getChannelSessionKey(channelName: string): string {
 }
 
 export default function ChatHome() {
-  useLanguage();
+  const { t } = useLanguage();
   const router = useRouter();
   const [channelName, setChannelName] = useState("");
   const [channelPassword, setChannelPassword] = useState("");
@@ -93,10 +93,10 @@ export default function ChatHome() {
               <MessageSquare className="h-7 w-7 md:h-10 md:w-10 text-primary" />
             </motion.div>
             <h1 className="text-3xl md:text-5xl font-bold font-righteous">
-              Secure Chat
+              {t("secureChatTitle")}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
-              End-to-end encrypted group chat. No logs.
+              {t("secureChatSubtitle")}
             </p>
           </div>
 
@@ -111,7 +111,7 @@ export default function ChatHome() {
             {/* Channel Name */}
             <div className="space-y-1.5">
               <label className="text-xs md:text-sm font-medium text-muted-foreground">
-                Channel Name
+                {t("channelName")}
               </label>
               <input
                 type="text"
@@ -127,14 +127,14 @@ export default function ChatHome() {
             {/* Password */}
             <div className="space-y-1.5">
               <label className="text-xs md:text-sm font-medium text-muted-foreground">
-                Channel Password
+                {t("channelPassword")}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={channelPassword}
                   onChange={(e) => setChannelPassword(e.target.value)}
-                  placeholder="Required for E2E encryption"
+                  placeholder={t("requiredForE2E")}
                   className="w-full px-3 md:px-4 py-2.5 md:py-3 text-base bg-muted border-2 border-transparent focus:border-primary rounded-lg md:rounded-xl outline-none transition-colors pr-11"
                   autoComplete="off"
                 />
@@ -147,14 +147,14 @@ export default function ChatHome() {
                 </button>
               </div>
               <p className="text-[10px] md:text-xs text-muted-foreground">
-                Password never leaves your device
+                {t("passwordNeverLeaves")}
               </p>
             </div>
 
             {/* Username */}
             <div className="space-y-1.5">
               <label className="text-xs md:text-sm font-medium text-muted-foreground">
-                Your Username
+                {t("yourUsername")}
               </label>
               <input
                 type="text"
@@ -176,12 +176,12 @@ export default function ChatHome() {
               {isJoining ? (
                 <>
                   <div className="h-4 w-4 md:h-5 md:w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  <span>Connecting...</span>
+                  <span>{t("connecting")}</span>
                 </>
               ) : (
                 <>
                   <Lock className="h-4 w-4 md:h-5 md:w-5" />
-                  <span>Join Secure Channel</span>
+                  <span>{t("joinChannel")}</span>
                   <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
                 </>
               )}
@@ -197,7 +197,7 @@ export default function ChatHome() {
           >
             <Shield className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
             <p className="text-xs md:text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">E2E Encryption:</span> PBKDF2 + ChaCha20-Poly1305 over TLS
+              <span className="font-medium text-foreground">{t("e2eEncryptionLabel")}</span> PBKDF2 + ChaCha20-Poly1305 over TLS
             </p>
           </motion.div>
         </motion.div>

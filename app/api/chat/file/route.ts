@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isAllowedAttachmentMimeType } from "@/lib/allowed-attachments";
 import {
   CHAT_FILE_BUCKET,
-  CHAT_FILE_EXPIRY_MS,
   CHAT_FILE_MAX_SIZE,
   getSupabaseAdminClient,
+  normalizeChatFileExpiryMs,
 } from "@/lib/supabase-storage";
 
 const MAX_ENCRYPTED_CHAT_FILE_SIZE = CHAT_FILE_MAX_SIZE + 1024;
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
     const channelHash = formData.get("channelHash");
     const encryptedFile = formData.get("file");
     const mimeType = normalizeMimeType(formData.get("mimeType"));
+    const expiresInMs = normalizeChatFileExpiryMs(formData.get("expiresInMs"));
 
     if (typeof channelHash !== "string" || !isValidChannelHash(channelHash)) {
       return NextResponse.json({ error: "Canale non valido" }, { status: 400 });
@@ -52,13 +54,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File cifrato mancante" }, { status: 400 });
     }
 
+    if (!isAllowedAttachmentMimeType(mimeType)) {
+      return NextResponse.json({ error: "Formato file non supportato" }, { status: 400 });
+    }
+
     if (encryptedFile.size <= 0 || encryptedFile.size > MAX_ENCRYPTED_CHAT_FILE_SIZE) {
       return NextResponse.json({ error: "File troppo grande (max 10MB)" }, { status: 400 });
     }
 
     await cleanupExpiredChatFiles();
 
-    const expiresAt = new Date(Date.now() + CHAT_FILE_EXPIRY_MS);
+    const expiresAt = new Date(Date.now() + expiresInMs);
     const fileRecord = await prisma.chatFile.create({
       data: {
         channelHash,
