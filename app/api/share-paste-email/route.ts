@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
+import { normalizeEmail, verifyVerifiedEmailToken } from "@/lib/email-verification";
 
 const DEFAULT_FROM = "Pastaa <onboarding@resend.dev>";
 const MAX_MESSAGE_LENGTH = 2000;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const RATE_LIMIT_DAILY_MS = 24 * 60 * 60 * 1000;
+const MAX_EMAILS_PER_IP_PER_HOUR = 3;
+const MAX_EMAILS_PER_IP_PER_DAY = 10;
+const MAX_EMAILS_PER_RECIPIENT_PER_HOUR = 2;
+
+interface RateLimitBucket {
+  count: number;
+  resetAt: number;
+}
+
+const rateLimitStore = new Map<string, RateLimitBucket>();
 
 function escapeHtml(text: string): string {
   return text
@@ -31,6 +44,60 @@ function normalizeFromAddress(from?: string): string | null {
   }
 
   return isValidEmail(unquoted) ? unquoted : null;
+}
+
+function getClientIp(request: NextRequest): string {
+  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    forwardedFor ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+function consumeRateLimit(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const current = rateLimitStore.get(key);
+
+  if (!current || current.resetAt <= now) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+
+  if (current.count >= limit) return false;
+
+  current.count += 1;
+  return true;
+}
+
+function cleanupRateLimitStore(): void {
+  const now = Date.now();
+  for (const [key, bucket] of Array.from(rateLimitStore.entries())) {
+    if (bucket.resetAt <= now) rateLimitStore.delete(key);
+  }
+}
+
+async function verifyTurnstileToken(token: string, ip: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return false;
+
+  const formData = new FormData();
+  formData.append("secret", secret);
+  formData.append("response", token);
+  if (ip !== "unknown") formData.append("remoteip", ip);
+
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: formData,
+    });
+    const result = (await response.json()) as { success?: boolean };
+    return result.success === true;
+  } catch (error) {
+    console.error("Turnstile verification failed:", error);
+    return false;
+  }
 }
 
 function validateShareUrl(shareUrl: string, shortId: string): { ok: true } | { ok: false; error: string } {
@@ -76,19 +143,74 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { to, shareUrl, shortId, message, subject, locale } = body as {
+    const {
+      to,
+      fromEmail,
+      senderVerificationToken,
+      shareUrl,
+      shortId,
+      message,
+      subject,
+      locale,
+      captchaToken,
+    } = body as {
       to?: string;
+      fromEmail?: string;
+      senderVerificationToken?: string;
       shareUrl?: string;
       shortId?: string;
       message?: string;
       subject?: string;
       locale?: string;
+      captchaToken?: string;
     };
 
     const isItalian = locale === "it";
 
     if (!to || !isValidEmail(to)) {
       return NextResponse.json({ error: "Email destinatario non valida" }, { status: 400 });
+    }
+
+    if (
+      !fromEmail ||
+      !isValidEmail(fromEmail) ||
+      !senderVerificationToken ||
+      !verifyVerifiedEmailToken(fromEmail, senderVerificationToken)
+    ) {
+      return NextResponse.json(
+        { error: "Conferma il tuo indirizzo e-mail prima di inviare" },
+        { status: 403 }
+      );
+    }
+
+    cleanupRateLimitStore();
+
+    const clientIp = getClientIp(request);
+    const normalizedRecipient = to.trim().toLowerCase();
+    const normalizedSender = normalizeEmail(fromEmail);
+    const isAllowed =
+      consumeRateLimit(`email:ip-hour:${clientIp}`, MAX_EMAILS_PER_IP_PER_HOUR, RATE_LIMIT_WINDOW_MS) &&
+      consumeRateLimit(`email:ip-day:${clientIp}`, MAX_EMAILS_PER_IP_PER_DAY, RATE_LIMIT_DAILY_MS) &&
+      consumeRateLimit(
+        `email:recipient-hour:${clientIp}:${normalizedRecipient}`,
+        MAX_EMAILS_PER_RECIPIENT_PER_HOUR,
+        RATE_LIMIT_WINDOW_MS
+      );
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: "Troppe email inviate. Riprova più tardi." },
+        { status: 429 }
+      );
+    }
+
+    if (!captchaToken || typeof captchaToken !== "string") {
+      return NextResponse.json({ error: "Verifica anti-bot mancante" }, { status: 403 });
+    }
+
+    const isCaptchaValid = await verifyTurnstileToken(captchaToken, clientIp);
+    if (!isCaptchaValid) {
+      return NextResponse.json({ error: "Verifica anti-bot non valida" }, { status: 403 });
     }
 
     if (!shareUrl || typeof shareUrl !== "string" || !shortId || typeof shortId !== "string") {
@@ -160,7 +282,8 @@ export async function POST(request: NextRequest) {
     const resend = new Resend(apiKey);
     const { data, error } = await resend.emails.send({
       from,
-      to: to.trim(),
+      to: normalizedRecipient,
+      replyTo: normalizedSender,
       subject: emailSubject,
       html,
       text,

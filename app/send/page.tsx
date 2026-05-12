@@ -32,6 +32,9 @@ import { toast } from "sonner";
 const MAX_TEXT_SIZE = 100 * 1024;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 10;
+const DEFAULT_EXPIRES_IN = "7d";
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const VERIFIED_EMAIL_STORAGE_KEY = "pastaa_verified_sender_email";
 
 interface EncryptedFilePayload {
   encryptedContent: string;
@@ -43,6 +46,100 @@ interface EncryptedFilePayload {
   size: number;
 }
 
+interface TurnstileInstance {
+  render: (
+    element: HTMLElement,
+    options: {
+      sitekey: string;
+      callback: (token: string) => void;
+      "expired-callback": () => void;
+      "error-callback": () => void;
+      theme?: "light" | "dark" | "auto";
+    }
+  ) => string;
+  reset: (widgetId?: string) => void;
+}
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileInstance;
+  }
+}
+
+interface TurnstileChallengeProps {
+  onTokenChange: (token: string) => void;
+}
+
+interface VerifiedSenderEmail {
+  email: string;
+  token: string;
+}
+
+function TurnstileChallenge({ onTokenChange }: TurnstileChallengeProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string>();
+
+  useEffect(() => {
+    const siteKey = TURNSTILE_SITE_KEY ?? "";
+    if (!siteKey || !containerRef.current) return;
+
+    let isCancelled = false;
+
+    function renderWidget() {
+      if (isCancelled || !containerRef.current || !window.turnstile || widgetIdRef.current) return;
+
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        theme: "auto",
+        callback: onTokenChange,
+        "expired-callback": () => onTokenChange(""),
+        "error-callback": () => onTokenChange(""),
+      });
+    }
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const scriptId = "cf-turnstile-script";
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.defer = true;
+        script.onload = renderWidget;
+        document.head.appendChild(script);
+      } else {
+        const interval = window.setInterval(() => {
+          if (window.turnstile) {
+            window.clearInterval(interval);
+            renderWidget();
+          }
+        }, 100);
+
+        return () => {
+          isCancelled = true;
+          window.clearInterval(interval);
+        };
+      }
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [onTokenChange]);
+
+  if (!TURNSTILE_SITE_KEY) {
+    return (
+      <p className="text-xs text-destructive">
+        CAPTCHA non configurato: imposta NEXT_PUBLIC_TURNSTILE_SITE_KEY.
+      </p>
+    );
+  }
+
+  return <div ref={containerRef} className="min-h-[65px]" />;
+}
+
 function formatFileSize(size: number): string {
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -50,6 +147,10 @@ function formatFileSize(size: number): string {
 
 function getTotalFileSize(files: File[]): number {
   return files.reduce((total, file) => total + file.size, 0);
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 export default function HomePage() {
@@ -61,14 +162,22 @@ export default function HomePage() {
   const [usePassword, setUsePassword] = useState(false);
   const [burnAfterReading, setBurnAfterReading] = useState(false);
   const [showExpiry, setShowExpiry] = useState(false);
-  const [expiresIn, setExpiresIn] = useState<string>("1d");
+  const [expiresIn, setExpiresIn] = useState<string>(DEFAULT_EXPIRES_IN);
   const [isLoading, setIsLoading] = useState(false);
   const [pasteId, setPasteId] = useState("");
   const [shortId, setShortId] = useState("");
   const [keyString, setKeyString] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [senderVerificationToken, setSenderVerificationToken] = useState("");
+  const [senderEmailVerified, setSenderEmailVerified] = useState(false);
+  const [emailVerificationCode, setEmailVerificationCode] = useState("");
+  const [emailChallengeToken, setEmailChallengeToken] = useState("");
+  const [isSendingVerificationCode, setIsSendingVerificationCode] = useState(false);
+  const [isVerifyingSenderEmail, setIsVerifyingSenderEmail] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
   const [copied, setCopied] = useState(false);
   
   // Feature badges state
@@ -103,6 +212,50 @@ export default function HomePage() {
       }
     }
   }, [burnAfterReading, usePassword, showExpiry]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const saved = localStorage.getItem(VERIFIED_EMAIL_STORAGE_KEY);
+    if (!saved) return;
+
+    try {
+      const verifiedEmail = JSON.parse(saved) as VerifiedSenderEmail;
+      if (verifiedEmail.email && verifiedEmail.token) {
+        setSenderEmail(verifiedEmail.email);
+        setSenderVerificationToken(verifiedEmail.token);
+        setSenderEmailVerified(true);
+      }
+    } catch {
+      localStorage.removeItem(VERIFIED_EMAIL_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    const normalizedSenderEmail = normalizeEmail(senderEmail);
+    if (!normalizedSenderEmail) {
+      setSenderEmailVerified(false);
+      setSenderVerificationToken("");
+      return;
+    }
+
+    const saved = localStorage.getItem(VERIFIED_EMAIL_STORAGE_KEY);
+    if (!saved) {
+      setSenderEmailVerified(false);
+      setSenderVerificationToken("");
+      return;
+    }
+
+    try {
+      const verifiedEmail = JSON.parse(saved) as VerifiedSenderEmail;
+      const isSameEmail = normalizeEmail(verifiedEmail.email) === normalizedSenderEmail;
+      setSenderEmailVerified(isSameEmail && Boolean(verifiedEmail.token));
+      setSenderVerificationToken(isSameEmail ? verifiedEmail.token : "");
+    } catch {
+      setSenderEmailVerified(false);
+      setSenderVerificationToken("");
+    }
+  }, [senderEmail]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -198,7 +351,7 @@ export default function HomePage() {
           salt,
           hasPassword: usePassword && Boolean(normalizedPassword),
           burnAfterReading,
-          expiresIn: showExpiry ? expiresIn : "1d",
+          expiresIn: showExpiry ? expiresIn : DEFAULT_EXPIRES_IN,
           encryptedFiles,
           fileSize: totalFileSize,
         }),
@@ -230,6 +383,96 @@ export default function HomePage() {
     return `${window.location.origin}/v/${shortId}#${keyString}`;
   }
 
+  async function requestSenderEmailVerification() {
+    const email = normalizeEmail(senderEmail);
+    if (!email) return;
+    if (!captchaToken) {
+      toast.error(t("captchaRequired"));
+      return;
+    }
+
+    setIsSendingVerificationCode(true);
+    try {
+      const response = await fetch("/api/share-paste-email/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "request",
+          email,
+          captchaToken,
+          locale: language,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        challengeToken?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.challengeToken) {
+        toast.error(typeof data.error === "string" ? data.error : t("emailVerificationSendFailed"));
+        return;
+      }
+
+      setEmailChallengeToken(data.challengeToken);
+      setEmailVerificationCode("");
+      setSenderEmailVerified(false);
+      setSenderVerificationToken("");
+      toast.success(t("emailVerificationSent"));
+    } catch {
+      toast.error(t("emailVerificationSendFailed"));
+    } finally {
+      setIsSendingVerificationCode(false);
+      setCaptchaToken("");
+      window.turnstile?.reset();
+    }
+  }
+
+  async function confirmSenderEmailVerification() {
+    const email = normalizeEmail(senderEmail);
+    const code = emailVerificationCode.trim();
+    if (!email || !code || !emailChallengeToken) return;
+
+    setIsVerifyingSenderEmail(true);
+    try {
+      const response = await fetch("/api/share-paste-email/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "confirm",
+          email,
+          code,
+          challengeToken: emailChallengeToken,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        email?: string;
+        verificationToken?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.email || !data.verificationToken) {
+        toast.error(typeof data.error === "string" ? data.error : t("emailVerificationFailed"));
+        return;
+      }
+
+      const verifiedEmail: VerifiedSenderEmail = {
+        email: data.email,
+        token: data.verificationToken,
+      };
+      localStorage.setItem(VERIFIED_EMAIL_STORAGE_KEY, JSON.stringify(verifiedEmail));
+      setSenderEmail(data.email);
+      setSenderVerificationToken(data.verificationToken);
+      setSenderEmailVerified(true);
+      setEmailChallengeToken("");
+      setEmailVerificationCode("");
+      toast.success(t("emailVerified"));
+    } catch {
+      toast.error(t("emailVerificationFailed"));
+    } finally {
+      setIsVerifyingSenderEmail(false);
+    }
+  }
+
   async function shareLink() {
     const url = getShareUrl();
     
@@ -253,6 +496,14 @@ export default function HomePage() {
   async function sendPasteEmail() {
     const to = recipientEmail.trim();
     if (!to || !shortId) return;
+    if (!senderEmailVerified || !senderVerificationToken) {
+      toast.error(t("senderEmailNotVerified"));
+      return;
+    }
+    if (!captchaToken) {
+      toast.error(t("captchaRequired"));
+      return;
+    }
 
     setIsSendingEmail(true);
     try {
@@ -261,11 +512,14 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to,
+          fromEmail: normalizeEmail(senderEmail),
+          senderVerificationToken,
           shareUrl: getShareUrl(),
           shortId,
           message: emailMessage.trim(),
           subject: t("emailSubject"),
           locale: language,
+          captchaToken,
         }),
       });
 
@@ -281,10 +535,13 @@ export default function HomePage() {
       }
 
       toast.success(t("emailSent"));
+      setCaptchaToken("");
     } catch {
       toast.error(t("emailSendFailed"));
     } finally {
       setIsSendingEmail(false);
+      setCaptchaToken("");
+      window.turnstile?.reset();
     }
   }
 
@@ -296,13 +553,14 @@ export default function HomePage() {
     setUsePassword(false);
     setBurnAfterReading(false);
     setShowExpiry(false);
-    setExpiresIn("1d");
+    setExpiresIn(DEFAULT_EXPIRES_IN);
     setPasteId("");
     setShortId("");
     setKeyString("");
     setRecipientEmail("");
     setEmailMessage("");
     setIsSendingEmail(false);
+    setCaptchaToken("");
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -344,6 +602,54 @@ export default function HomePage() {
           </div>
         </div>
         <div className="flex flex-col gap-3">
+          <div className="space-y-2">
+            <Input
+              type="email"
+              value={senderEmail}
+              onChange={(e) => {
+                setSenderEmail(e.target.value);
+                setEmailChallengeToken("");
+                setEmailVerificationCode("");
+              }}
+              placeholder={t('senderEmail')}
+              className="border-2"
+            />
+            {senderEmailVerified ? (
+              <p className="text-xs text-primary">{t('senderEmailVerified')}</p>
+            ) : (
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={requestSenderEmailVerification}
+                  disabled={!senderEmail.trim() || !captchaToken || isSendingVerificationCode}
+                  className="w-full border-2"
+                >
+                  {isSendingVerificationCode ? t("emailSending") : t("confirmSenderEmail")}
+                </Button>
+                {emailChallengeToken ? (
+                  <div className="flex gap-2">
+                    <Input
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={emailVerificationCode}
+                      onChange={(e) => setEmailVerificationCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder={t('emailVerificationCode')}
+                      className="border-2"
+                    />
+                    <Button
+                      type="button"
+                      onClick={confirmSenderEmailVerification}
+                      disabled={emailVerificationCode.trim().length !== 6 || isVerifyingSenderEmail}
+                      className="border-2 border-primary"
+                    >
+                      {isVerifyingSenderEmail ? t("loading") : t("verifyEmail")}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
           <Input
             type="email"
             value={recipientEmail}
@@ -357,10 +663,11 @@ export default function HomePage() {
             placeholder={t('emailMessagePlaceholder')}
             className="min-h-20 resize-none border-2"
           />
+          <TurnstileChallenge onTokenChange={setCaptchaToken} />
           <Button
             type="button"
             onClick={sendPasteEmail}
-            disabled={!recipientEmail.trim() || isSendingEmail}
+            disabled={!senderEmailVerified || !recipientEmail.trim() || !captchaToken || isSendingEmail}
             className="w-full border-2 border-primary"
           >
             <Mail className="mr-2 h-4 w-4" />

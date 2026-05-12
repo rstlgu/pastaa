@@ -26,6 +26,8 @@
 - **Password Protection** — Optional second layer of security
 - **Encrypted Attachments** — Files are encrypted client-side before upload
 - **Email Sharing** — Open your mail client with a ready-to-send encrypted link
+- **Verified Sender Email** — Email sharing requires confirming your address on that browser
+- **Default Expiration** — Pastes auto-destruct after 7 days when no duration is selected
 
 ### Share (Real-time Collaboration)
 - **Live Collaboration** — Multiple users editing simultaneously
@@ -150,6 +152,11 @@ PUSHER_SECRET=your_secret
 # Resend (optional, for Send by email)
 RESEND_API_KEY=
 RESEND_FROM=Pastaa <noreply@your-domain.tld>
+EMAIL_VERIFICATION_SECRET=
+
+# Cloudflare Turnstile (required when Send by email is enabled)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
 ```
 
 ---
@@ -172,6 +179,9 @@ NEXT_PUBLIC_PUSHER_KEY=your_key
 NEXT_PUBLIC_PUSHER_CLUSTER=eu
 RESEND_API_KEY=
 RESEND_FROM=Pastaa <noreply@your-domain.tld>
+EMAIL_VERIFICATION_SECRET=
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
 EOF
 
 # Start the stack
@@ -199,6 +209,7 @@ docker build -t pastaa \
   --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
   --build-arg NEXT_PUBLIC_PUSHER_KEY="your_key" \
   --build-arg NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
+  --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="your_site_key" \
   .
 
 # Run with external database
@@ -209,6 +220,11 @@ docker run -p 3000:3000 \
   -e PUSHER_SECRET="your_secret" \
   -e NEXT_PUBLIC_PUSHER_KEY="your_key" \
   -e NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
+  -e RESEND_API_KEY="your_resend_key" \
+  -e RESEND_FROM="Pastaa <noreply@your-domain.tld>" \
+  -e EMAIL_VERIFICATION_SECRET="your_random_secret" \
+  -e NEXT_PUBLIC_TURNSTILE_SITE_KEY="your_site_key" \
+  -e TURNSTILE_SECRET_KEY="your_secret_key" \
   pastaa
 ```
 

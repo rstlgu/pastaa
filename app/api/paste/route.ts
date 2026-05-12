@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 const MAX_TEXT_SIZE = 100 * 1024; // 100KB
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILE_COUNT = 10;
+const DEFAULT_EXPIRATION = "7d";
 const MAX_ENCRYPTED_TEXT_SIZE =
   Math.ceil((Math.ceil((MAX_TEXT_SIZE + 16) * 4 / 3) + 16) * 4 / 3) + 1024;
 const MAX_ENCRYPTED_FILE_SIZE =
@@ -158,9 +159,10 @@ export async function POST(request: NextRequest) {
 
     // Calcola data di scadenza
     let expiresAt: Date | null = null;
-    if (expiresIn) {
+    const requestedExpiration = typeof expiresIn === "string" && expiresIn ? expiresIn : DEFAULT_EXPIRATION;
+    if (requestedExpiration) {
       const now = new Date();
-      switch (expiresIn) {
+      switch (requestedExpiration) {
         case "1h":
           expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
           break;
