@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
 
-const DEFAULT_FROM = "Pastaa <noreply@pastaa.io>";
+const DEFAULT_FROM = "Pastaa <onboarding@resend.dev>";
 const MAX_MESSAGE_LENGTH = 2000;
 
 function escapeHtml(text: string): string {
@@ -17,10 +17,20 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function isValidFromAddress(from: string): boolean {
-  const trimmed = from.trim();
-  const namedAddressMatch = trimmed.match(/^.+\s<([^<>]+)>$/);
-  return isValidEmail(namedAddressMatch?.[1] ?? trimmed);
+function normalizeFromAddress(from?: string): string | null {
+  const trimmed = from?.trim();
+  if (!trimmed) return DEFAULT_FROM;
+
+  const unquoted = trimmed.replace(/^["'](.+)["']$/, "$1").trim();
+  const namedAddressMatch = unquoted.match(/^([^<>]+?)\s*<([^<>]+)>$/);
+  if (namedAddressMatch) {
+    const name = namedAddressMatch[1].trim().replace(/^["'](.+)["']$/, "$1").trim();
+    const email = namedAddressMatch[2].trim();
+    if (!name || !isValidEmail(email)) return null;
+    return `${name} <${email}>`;
+  }
+
+  return isValidEmail(unquoted) ? unquoted : null;
 }
 
 function validateShareUrl(shareUrl: string, shortId: string): { ok: true } | { ok: false; error: string } {
@@ -104,8 +114,16 @@ export async function POST(request: NextRequest) {
         ? subject.trim().slice(0, 200)
         : "Pastaa — encrypted link";
 
-    const configuredFrom = process.env.RESEND_FROM?.trim();
-    const from = configuredFrom && isValidFromAddress(configuredFrom) ? configuredFrom : DEFAULT_FROM;
+    const from = normalizeFromAddress(process.env.RESEND_FROM);
+    if (!from) {
+      return NextResponse.json(
+        {
+          error:
+            "RESEND_FROM non valido. Usa email@example.com oppure Name <email@example.com> senza virgolette.",
+        },
+        { status: 503 }
+      );
+    }
 
     const introHtml = safeMessage
       ? `<p style="margin:0 0 16px;">${escapeHtml(safeMessage).replace(/\n/g, "<br/>")}</p>`

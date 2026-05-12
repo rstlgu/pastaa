@@ -149,7 +149,7 @@ PUSHER_SECRET=your_secret
 
 # Resend (optional, for Send by email)
 RESEND_API_KEY=
-RESEND_FROM=
+RESEND_FROM=Pastaa <noreply@your-domain.tld>
 ```
 
 ---
@@ -171,7 +171,7 @@ PUSHER_SECRET=your_secret
 NEXT_PUBLIC_PUSHER_KEY=your_key
 NEXT_PUBLIC_PUSHER_CLUSTER=eu
 RESEND_API_KEY=
-RESEND_FROM=
+RESEND_FROM=Pastaa <noreply@your-domain.tld>
 EOF
 
 # Start the stack
