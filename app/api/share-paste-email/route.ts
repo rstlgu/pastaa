@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
 import { normalizeEmail, verifyVerifiedEmailToken } from "@/lib/email-verification";
+import { isDisposableEmail } from "@/lib/disposable-email";
 
 const DEFAULT_FROM = "Pastaa <onboarding@resend.dev>";
 const MAX_MESSAGE_LENGTH = 2000;
@@ -171,9 +172,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email destinatario non valida" }, { status: 400 });
     }
 
+    if (isDisposableEmail(to)) {
+      return NextResponse.json(
+        { error: "Email temporanee non consentite" },
+        { status: 400 }
+      );
+    }
+
     if (
       !fromEmail ||
       !isValidEmail(fromEmail) ||
+      isDisposableEmail(fromEmail) ||
       !senderVerificationToken ||
       !verifyVerifiedEmailToken(fromEmail, senderVerificationToken)
     ) {

@@ -7,6 +7,7 @@ import {
   normalizeEmail,
   verifyEmailChallenge,
 } from "@/lib/email-verification";
+import { isDisposableEmail } from "@/lib/disposable-email";
 
 const DEFAULT_FROM = "Pastaa <onboarding@resend.dev>";
 const VERIFY_WINDOW_MS = 60 * 60 * 1000;
@@ -118,6 +119,13 @@ export async function POST(request: NextRequest) {
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Email non valida" }, { status: 400 });
+    }
+
+    if (isDisposableEmail(email)) {
+      return NextResponse.json(
+        { error: "Email temporanee non consentite" },
+        { status: 400 }
+      );
     }
 
     const normalizedEmail = normalizeEmail(email);

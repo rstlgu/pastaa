@@ -27,6 +27,7 @@
 - **Encrypted Attachments** — Files are encrypted client-side before upload
 - **Email Sharing** — Open your mail client with a ready-to-send encrypted link
 - **Verified Sender Email** — Email sharing requires confirming your address on that browser
+- **Disposable Email Blocking** — Temporary email domains are rejected for sender and recipient addresses
 - **Default Expiration** — Pastes auto-destruct after 7 days when no duration is selected
 
 ### Share (Real-time Collaboration)
