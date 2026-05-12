@@ -13,6 +13,15 @@ function isValidChannelHash(channelHash: string): boolean {
   return /^[a-f0-9]{64}$/i.test(channelHash);
 }
 
+function normalizeMimeType(mimeType: FormDataEntryValue | null): string {
+  if (typeof mimeType !== "string") return "application/octet-stream";
+  const normalized = mimeType.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/i.test(normalized)) {
+    return "application/octet-stream";
+  }
+  return normalized.slice(0, 120);
+}
+
 async function cleanupExpiredChatFiles(): Promise<void> {
   const expiredFiles = await prisma.chatFile.findMany({
     where: { expiresAt: { lte: new Date() } },
@@ -33,6 +42,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const channelHash = formData.get("channelHash");
     const encryptedFile = formData.get("file");
+    const mimeType = normalizeMimeType(formData.get("mimeType"));
 
     if (typeof channelHash !== "string" || !isValidChannelHash(channelHash)) {
       return NextResponse.json({ error: "Canale non valido" }, { status: 400 });
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.storage
       .from(CHAT_FILE_BUCKET)
       .upload(fileRecord.storagePath, encryptedFile, {
-        contentType: "application/octet-stream",
+        contentType: mimeType,
         upsert: false,
       });
 

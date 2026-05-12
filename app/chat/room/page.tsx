@@ -609,7 +609,8 @@ function ChatRoomContent() {
       ) as ArrayBuffer;
       const formData = new FormData();
       formData.append("channelHash", activeChannel.hash);
-      formData.append("file", new Blob([encryptedBuffer], { type: "application/octet-stream" }));
+      formData.append("mimeType", file.type || "application/octet-stream");
+      formData.append("file", new Blob([encryptedBuffer], { type: file.type || "application/octet-stream" }));
 
       const uploadResponse = await fetch("/api/chat/file", {
         method: "POST",
