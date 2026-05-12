@@ -17,6 +17,12 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+function isValidFromAddress(from: string): boolean {
+  const trimmed = from.trim();
+  const namedAddressMatch = trimmed.match(/^.+\s<([^<>]+)>$/);
+  return isValidEmail(namedAddressMatch?.[1] ?? trimmed);
+}
+
 function validateShareUrl(shareUrl: string, shortId: string): { ok: true } | { ok: false; error: string } {
   let url: URL;
   try {
@@ -98,7 +104,8 @@ export async function POST(request: NextRequest) {
         ? subject.trim().slice(0, 200)
         : "Pastaa — encrypted link";
 
-    const from = process.env.RESEND_FROM?.trim() || DEFAULT_FROM;
+    const configuredFrom = process.env.RESEND_FROM?.trim();
+    const from = configuredFrom && isValidFromAddress(configuredFrom) ? configuredFrom : DEFAULT_FROM;
 
     const introHtml = safeMessage
       ? `<p style="margin:0 0 16px;">${escapeHtml(safeMessage).replace(/\n/g, "<br/>")}</p>`
