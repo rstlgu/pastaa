@@ -42,3 +42,6 @@ prisma/*.db-journal
 .dev.vars*
 !.dev.vars.example
 .migration/
+
+# Public Supabase trust roots used only for the read-only migration.
+!scripts/certificates/supabase-ca.pem
