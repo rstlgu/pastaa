@@ -1,5 +1,6 @@
 import type { Env } from "./types";
 import { assert, hash, HttpError } from "./http";
+let globalBlockedUntil = 0;
 export async function consume(
   db: D1Database,
   key: string,
@@ -29,12 +30,16 @@ export async function clientKey(request: Request, env: Env) {
   return hash(`${env.RATE_LIMIT_SECRET}:${ip}`);
 }
 export async function limitApi(request: Request, env: Env) {
-  const key = await clientKey(request, env);
-  if (
-    !(await consume(env.DB, `ip:${key}`, 360, 60000)) ||
-    !(await consume(env.DB, "global-api", 10000, 86400000))
-  )
+  if (Date.now() < globalBlockedUntil)
     throw new HttpError(429, "Limite gratuito raggiunto. Riprova più tardi.");
+  const key = await clientKey(request, env);
+  if (!(await consume(env.DB, `ip:${key}`, 360, 60000)))
+    throw new HttpError(429, "Limite gratuito raggiunto. Riprova più tardi.");
+  if (!(await consume(env.DB, "global-api", 10000, 86400000))) {
+    // This is an optimization per isolate; D1 remains the authoritative global budget.
+    globalBlockedUntil = (Math.floor(Date.now() / 86400000) + 1) * 86400000;
+    throw new HttpError(429, "Limite gratuito raggiunto. Riprova più tardi.");
+  }
   return key;
 }
 export async function limitAllocation(env: Env, key: string, size: number) {

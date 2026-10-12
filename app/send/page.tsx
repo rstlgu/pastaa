@@ -1,6 +1,9 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useState, useEffect, useRef } from "react";
+import { TurnstileChallenge } from "@/components/turnstile-challenge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +38,6 @@ const MAX_TEXT_SIZE = 100 * 1024;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 10;
 const DEFAULT_EXPIRES_IN = "7d";
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 const VERIFIED_EMAIL_STORAGE_KEY = "pastaa_verified_sender_email";
 
 interface EncryptedFilePayload {
@@ -48,102 +50,9 @@ interface EncryptedFilePayload {
   size: number;
 }
 
-interface TurnstileInstance {
-  render: (
-    element: HTMLElement,
-    options: {
-      sitekey: string;
-      callback: (token: string) => void;
-      "expired-callback": () => void;
-      "error-callback": () => void;
-      theme?: "light" | "dark" | "auto";
-    }
-  ) => string;
-  reset: (widgetId?: string) => void;
-}
-
-declare global {
-  interface Window {
-    turnstile?: TurnstileInstance;
-  }
-}
-
-interface TurnstileChallengeProps {
-  onTokenChange: (token: string) => void;
-}
-
 interface VerifiedSenderEmail {
   email: string;
   token: string;
-}
-
-function TurnstileChallenge({ onTokenChange }: TurnstileChallengeProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<string>();
-
-  useEffect(() => {
-    const siteKey = TURNSTILE_SITE_KEY ?? "";
-    if (!siteKey || !containerRef.current) return;
-
-    let isCancelled = false;
-
-    function renderWidget() {
-      if (isCancelled || !containerRef.current || !window.turnstile || widgetIdRef.current) return;
-
-      widgetIdRef.current = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        theme: "auto",
-        callback: onTokenChange,
-        "expired-callback": () => onTokenChange(""),
-        "error-callback": () => onTokenChange(""),
-      });
-    }
-
-    if (window.turnstile) {
-      renderWidget();
-    } else {
-      const scriptId = "cf-turnstile-script";
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement("script");
-        script.id = scriptId;
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-        script.async = true;
-        script.defer = true;
-        script.onload = renderWidget;
-        document.head.appendChild(script);
-      } else {
-        const interval = window.setInterval(() => {
-          if (window.turnstile) {
-            window.clearInterval(interval);
-            renderWidget();
-          }
-        }, 100);
-
-        return () => {
-          isCancelled = true;
-          window.clearInterval(interval);
-        };
-      }
-    }
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [onTokenChange]);
-
-  if (!TURNSTILE_SITE_KEY) {
-    return (
-      <p className="text-center text-xs text-destructive">
-        La verifica anti-bot non è disponibile. Riprova più tardi.
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex min-h-[76px] items-center justify-center rounded-xl border border-primary/10 bg-background/70 px-3 py-2">
-      <div ref={containerRef} />
-    </div>
-  );
 }
 
 function formatFileSize(size: number): string {
@@ -364,7 +273,7 @@ export default function HomePage() {
         const { encryptedContent: _ciphertext, ...metadata } = encrypted;
         storedFiles.push({ ...metadata, fileId: stored.fileId, readToken: stored.readToken });
       }
-      const response = await fetch("/api/paste", {
+      const response = await apiFetch("/api/paste", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -418,7 +327,7 @@ export default function HomePage() {
 
     setIsSendingVerificationCode(true);
     try {
-      const response = await fetch("/api/share-paste-email/verify", {
+      const response = await apiFetch("/api/share-paste-email/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -459,7 +368,7 @@ export default function HomePage() {
 
     setIsVerifyingSenderEmail(true);
     try {
-      const response = await fetch("/api/share-paste-email/verify", {
+      const response = await apiFetch("/api/share-paste-email/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -532,7 +441,7 @@ export default function HomePage() {
 
     setIsSendingEmail(true);
     try {
-      const response = await fetch("/api/share-paste-email", {
+      const response = await apiFetch("/api/share-paste-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

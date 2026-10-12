@@ -1,3 +1,4 @@
+import { apiFetch } from "./api-fetch";
 import { attachmentExtension, attachmentMime } from "./allowed-attachments";
 const CHUNK_BYTES = 128 * 1024;
 export interface StoredFile {
@@ -38,7 +39,7 @@ export function bytesToBase64(bytes: Uint8Array) {
   return btoa(text);
 }
 export async function discardStoredFile(file: StoredFile) {
-  await fetch(`/api/files/${file.fileId}`, {
+  await apiFetch(`/api/files/${file.fileId}`, {
     method: "DELETE",
     headers: { "X-Upload-Token": file.uploadToken },
   }).catch(() => undefined);
@@ -50,7 +51,7 @@ export async function uploadEncryptedFile(
   options: { layers?: 1 | 2; channelHash?: string; expiresInMs?: number } = {},
 ): Promise<StoredFile> {
   const ticket = await checked(
-    await fetch("/api/files", {
+    await apiFetch("/api/files", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -79,7 +80,7 @@ export async function uploadEncryptedFile(
     ) {
       const chunk = bytes.slice(offset, offset + CHUNK_BYTES);
       await checked(
-        await fetch(`/api/files/${result.fileId}/chunks/${ordinal}`, {
+        await apiFetch(`/api/files/${result.fileId}/chunks/${ordinal}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/octet-stream",
@@ -91,7 +92,7 @@ export async function uploadEncryptedFile(
       );
     }
     const complete = await checked(
-      await fetch(`/api/files/${result.fileId}/complete`, {
+      await apiFetch(`/api/files/${result.fileId}/complete`, {
         method: "POST",
         headers: { "X-Upload-Token": result.uploadToken },
       }),
@@ -113,7 +114,7 @@ export async function downloadEncryptedFile(
   )
     throw new Error("Riferimento allegato non valido");
   const headers: Record<string, string> = { "X-File-Token": readToken };
-  const info = await checked(await fetch(`/api/files/${fileId}`, { headers }));
+  const info = await checked(await apiFetch(`/api/files/${fileId}`, { headers }));
   const size = Number(info.size),
     chunks = Number(info.chunks),
     chunkBytes = Number(info.chunkBytes),
@@ -139,7 +140,7 @@ export async function downloadEncryptedFile(
       Array.from({ length: Math.min(3, chunks - start) }, async (_, i) => {
         if (Date.now() >= expiry) throw new Error("Allegato scaduto");
         const ordinal = start + i;
-        const response = await fetch(`/api/files/${fileId}/chunks/${ordinal}`, {
+        const response = await apiFetch(`/api/files/${fileId}/chunks/${ordinal}`, {
           headers,
         });
         if (!response.ok)
@@ -160,7 +161,7 @@ export async function downloadEncryptedFile(
   }
   if (Date.now() >= expiry) throw new Error("Allegato scaduto");
   if (info.burn)
-    await fetch(`/api/files/${fileId}`, { method: "DELETE", headers });
+    await apiFetch(`/api/files/${fileId}`, { method: "DELETE", headers });
   return result;
 }
 export async function hydratePasteFiles<

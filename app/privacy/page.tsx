@@ -110,7 +110,7 @@ export default function PrivacyPage() {
             </div>
             
             <p className="text-muted-foreground">
-              Pastaa non utilizza cookie di tracciamento o profilazione. Utilizziamo solo cookie tecnici strettamente necessari per il funzionamento del servizio (ad esempio, per memorizzare le preferenze di tema scuro/chiaro localmente nel tuo browser).
+              Pastaa non utilizza cookie di profilazione. Le preferenze del tema vengono salvate localmente nel browser. Per prevenire abusi utilizziamo Cloudflare Turnstile e cookie tecnici di sicurezza: Cloudflare può impostare il cookie cf_clearance, mentre Pastaa usa una sessione firmata valida per 20 minuti. Per la verifica Cloudflare riceve informazioni tecniche della connessione, incluso l’indirizzo IP. I contatori del servizio usano un’impronta dell’IP protetta con un segreto e scadono al termine della rispettiva finestra temporale.
             </p>
           </section>
 
@@ -198,4 +198,3 @@ export default function PrivacyPage() {
     </div>
   );
 }
-

@@ -13,9 +13,23 @@ import {
   generateKey,
   decryptText,
 } from "../lib/crypto";
-import { bytesFromBase64 } from "../lib/file-storage";
+import { issueAccessToken, cookieName, ACCESS_TTL_MS } from "../worker/access";
+const bytesFromBase64 = (value: string) =>
+  new Uint8Array(Buffer.from(value, "base64"));
 import type { Env } from "../worker/types";
 let mf: Miniflare, env: Env;
+const cookies = new Map<string, string>();
+function limiter(limit: number): RateLimit {
+  const counters = new Map<string, number>();
+  return {
+    limit: async ({ key }: { key: string }) => {
+      const bucket = `${key}:${Math.floor(Date.now() / 60000)}`;
+      const count = (counters.get(bucket) ?? 0) + 1;
+      counters.set(bucket, count);
+      return { success: count <= limit };
+    },
+  } as RateLimit;
+}
 before(async () => {
   mf = new Miniflare(
     convertV4MiniflareOptions({
@@ -47,12 +61,22 @@ before(async () => {
     ASSETS: { fetch: async () => new Response("static") } as unknown as Fetcher,
     APP_URL: "https://pastaa.io",
     RATE_LIMIT_SECRET: "test-secret-that-is-at-least-32-characters",
+    TURNSTILE_SECRET_KEY: "test-only-siteverify-secret",
+    API_LIMITER: limiter(360),
+    ACCESS_LIMITER: limiter(6),
+    SESSION_LIMITER: limiter(360),
+    WRITE_LIMITER: limiter(30),
   };
 });
 after(async () => {
   await mf?.dispose();
 });
 beforeEach(async () => {
+  cookies.clear();
+  env.API_LIMITER = limiter(360);
+  env.ACCESS_LIMITER = limiter(6);
+  env.SESSION_LIMITER = limiter(360);
+  env.WRITE_LIMITER = limiter(30);
   await env.DB.batch(
     [
       "DELETE FROM Paste",
@@ -69,7 +93,22 @@ async function request(
   body?: unknown,
   headers: Record<string, string> = {},
 ) {
-  const h = { "CF-Connecting-IP": "192.0.2.42", ...headers };
+  const h: Record<string, string> = {
+    "CF-Connecting-IP": "192.0.2.42",
+    Origin: "https://pastaa.io",
+    ...headers,
+  };
+  const identity = `${h["CF-Connecting-IP"]}:${h["User-Agent"] ?? ""}`;
+  if (!("Cookie" in h)) {
+    if (!cookies.has(identity)) {
+      const access = await issueAccessToken(
+        new Request("https://pastaa.io/api/access", { headers: h }),
+        env,
+      );
+      cookies.set(identity, `${cookieName(env)}=${access.value}`);
+    }
+    h.Cookie = cookies.get(identity)!;
+  }
   const raw = body instanceof Uint8Array;
   if (body !== undefined)
     h["Content-Type" as keyof typeof h] = raw
@@ -568,4 +607,234 @@ test("burning a paste retains only a single bounded attachment transfer, then ca
     await env.DB.prepare("SELECT used FROM StorageBudget").first("used"),
     0,
   );
+});
+
+test("distributed requests without verified sessions never access D1", async (t) => {
+  let dbCalls = 0;
+  const original = env.DB;
+  env.DB = new Proxy(original, {
+    get(target, prop) {
+      if (prop === "prepare" || prop === "batch")
+        return () => {
+          dbCalls++;
+          throw new Error("Unverified database access");
+        };
+      return Reflect.get(target, prop);
+    },
+  });
+  t.after(() => {
+    env.DB = original;
+  });
+  for (let n = 1; n <= 80; n++) {
+    const headers = { Cookie: "", "CF-Connecting-IP": `198.51.100.${n}` };
+    assert.equal(
+      (
+        await request(
+          "/api/files",
+          "POST",
+          { plainSize: 1024 * 1024 * 1024 },
+          headers,
+        )
+      ).status,
+      401,
+    );
+    assert.equal(
+      (await request("/api/paste/missing", "GET", undefined, headers)).status,
+      401,
+    );
+    assert.equal(
+      (await request("/api/chat/auth", "POST", {}, headers)).status,
+      401,
+    );
+  }
+  assert.equal(dbCalls, 0);
+});
+
+test("signed access expires and cannot be forged or reused from another IP, browser or host", async () => {
+  const baseHeaders = {
+    "CF-Connecting-IP": "192.0.2.42",
+    Origin: "https://pastaa.io",
+    "User-Agent": "test-browser",
+  };
+  const issued = await issueAccessToken(
+    new Request("https://pastaa.io/api/access", { headers: baseHeaders }),
+    env,
+  );
+  const headers = {
+    ...baseHeaders,
+    Cookie: `${cookieName(env)}=${issued.value}`,
+  };
+  assert.equal(
+    (await request("/api/health", "GET", undefined, headers)).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request("/api/health", "GET", undefined, {
+        ...headers,
+        "CF-Connecting-IP": "192.0.2.43",
+      })
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await request("/api/health", "GET", undefined, {
+        ...headers,
+        "User-Agent": "other-browser",
+      })
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await request("/api/health", "GET", undefined, {
+        ...headers,
+        Cookie:
+          headers.Cookie.replace(
+            /^([^=]+=1\.)\d+/,
+            `$1${Date.now() + ACCESS_TTL_MS}`,
+          ) + "x",
+      })
+    ).status,
+    401,
+  );
+  for (const expiry of [Date.now() - 1, Date.now() + ACCESS_TTL_MS * 2]) {
+    const invalid = await issueAccessToken(
+      new Request("https://pastaa.io/api/access", { headers: baseHeaders }),
+      env,
+      expiry,
+    );
+    assert.equal(
+      (
+        await request("/api/health", "GET", undefined, {
+          ...headers,
+          Cookie: `${cookieName(env)}=${invalid.value}`,
+        })
+      ).status,
+      401,
+    );
+  }
+  assert.equal(
+    (
+      await worker.fetch(
+        new Request("https://pastaa.pastaa.workers.dev/api/health", {
+          headers,
+        }),
+        env,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await worker.fetch(
+        new Request("https://chat.pastaa.io/api/health", {
+          headers: { ...headers, Origin: "https://chat.pastaa.io" },
+        }),
+        env,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (await request("/api/paste", "POST", {}, { ...headers, Origin: "" }))
+      .status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/api/health", "GET", undefined, {
+        ...headers,
+        "Sec-Fetch-Site": "cross-site",
+      })
+    ).status,
+    403,
+  );
+});
+
+test("burst and creation limits reject requests before database access", async (t) => {
+  env.WRITE_LIMITER = limiter(1);
+  assert.equal((await makeFile()).fileId.length > 0, true);
+  let dbCalls = 0;
+  const original = env.DB;
+  env.DB = new Proxy(original, {
+    get(target, prop) {
+      if (prop === "prepare")
+        return () => {
+          dbCalls++;
+          throw new Error("Database access after rejection");
+        };
+      return Reflect.get(target, prop);
+    },
+  });
+  t.after(() => {
+    env.DB = original;
+  });
+  assert.equal((await request("/api/files", "POST", {})).status, 429);
+  env.API_LIMITER = limiter(0);
+  assert.equal((await request("/api/health")).status, 429);
+  assert.equal(dbCalls, 0);
+});
+
+test("access handshake verifies Turnstile hostname/action, fails closed and issues a protected cookie", async (t) => {
+  let result: unknown = { success: false };
+  let calls = 0;
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (url: string, options: RequestInit) => {
+      assert.equal(
+        url,
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      );
+      const body = options.body as URLSearchParams;
+      assert.equal(body.get("response"), "test-turnstile-token");
+      assert.equal(body.get("remoteip"), "192.0.2.42");
+      calls++;
+      return Response.json(result);
+    },
+  );
+  assert.equal(
+    (await request("/api/access", "POST", {}, { Cookie: "" })).status,
+    400,
+  );
+  for (const value of [
+    { success: false },
+    { success: true, hostname: "evil.example", action: "pastaa-access" },
+    { success: true, hostname: "pastaa.io", action: "email" },
+  ]) {
+    result = value;
+    assert.equal(
+      (
+        await request(
+          "/api/access",
+          "POST",
+          { token: "test-turnstile-token" },
+          { Cookie: "" },
+        )
+      ).status,
+      403,
+    );
+  }
+  result = { success: true, hostname: "pastaa.io", action: "pastaa-access" };
+  const response = await request(
+    "/api/access",
+    "POST",
+    { token: "test-turnstile-token" },
+    { Cookie: "" },
+  );
+  assert.equal(response.status, 200);
+  const cookie = response.headers.get("Set-Cookie")!;
+  assert.match(cookie, /^__Host-pastaa_access=/);
+  assert.match(cookie, /; HttpOnly; SameSite=Strict; Secure$/);
+  assert.equal(
+    (
+      await request("/api/health", "GET", undefined, {
+        Cookie: cookie.split(";")[0],
+      })
+    ).status,
+    200,
+  );
+  assert.equal(calls, 4);
 });

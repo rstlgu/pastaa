@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/components/language-provider";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { AccessGate } from "@/components/access-gate";
 import "@/app/globals.css";
 const Home = lazy(() => import("@/app/page"));
 const Send = lazy(() => import("@/app/send/page"));
@@ -49,7 +50,9 @@ createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <ThemeProvider defaultTheme="dark" storageKey="pasta-theme">
       <LanguageProvider>
-        <AppRoutes />
+        <AccessGate>
+          <AppRoutes />
+        </AccessGate>
         <ThemedToaster />
       </LanguageProvider>
     </ThemeProvider>

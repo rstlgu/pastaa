@@ -15,30 +15,40 @@ import { getPage, savePage } from "./pages";
 import { chatAuth, chatEvent, pageBroadcast } from "./pusher";
 import { POST as shareEmail } from "./email-share";
 import { POST as verifyEmail } from "./email-verify";
+import {
+  accessEndpoint,
+  accessRequired,
+  accessSession,
+  assertRequestOrigin,
+  fastLimit,
+} from "./access";
 export async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
   if (!["GET", "POST", "PUT", "DELETE"].includes(method))
     return json({ error: "Metodo non consentito" }, 405);
-  if (method !== "GET") {
-    const origin = request.headers.get("Origin");
-    const main = new URL(env.APP_URL).origin;
-    const chat = new URL(main);
-    chat.hostname = "chat." + chat.hostname.replace(/^www\./, "");
-    assert(
-      !origin ||
-        [
-          main,
-          chat.origin,
-          url.origin,
-          "http://localhost:5173",
-          "http://127.0.0.1:5173",
-        ].includes(origin),
-      "Origine non consentita",
-      403,
-    );
-  }
+  assertRequestOrigin(request, env);
+  await fastLimit(
+    env.API_LIMITER,
+    request.headers.get("CF-Connecting-IP") ?? "local",
+  );
+  if (path === "/api/access") return accessEndpoint(request, env);
+  const session = await accessSession(request, env);
+  if (!session) return accessRequired();
+  await fastLimit(env.SESSION_LIMITER, session.id);
+  if (
+    method === "POST" &&
+    ["/api/files", "/api/paste", "/api/public-page"].includes(path)
+  )
+    await fastLimit(env.WRITE_LIMITER, session.id);
+  // Unknown paths must not read/write D1 counters.
+  if (
+    !/^\/api\/(?:health|files(?:\/[A-Za-z0-9_-]{1,100}(?:\/chunks\/\d{1,3}|\/complete)?)?|paste(?:\/(?:short\/)?[A-Za-z0-9_-]{1,100})?|public-page(?:\/[A-Za-z0-9_-]{1,100}\/(?:broadcast|broadcast-presence))?|chat\/(?:auth|send|join|leave|sync)|share-paste-email(?:\/verify)?)$/.test(
+      path,
+    )
+  )
+    return json({ error: "API non trovata" }, 404);
   const client = await limitApi(request, env);
   if (path === "/api/health" && method === "GET") {
     await env.DB.prepare("SELECT id FROM StorageBudget WHERE id=1").first();

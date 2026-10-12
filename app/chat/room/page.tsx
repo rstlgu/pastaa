@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -443,7 +445,7 @@ function ChatRoomContent() {
         });
 
         // Announce join
-        fetch("/api/chat/join", {
+        apiFetch("/api/chat/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -523,7 +525,7 @@ function ChatRoomContent() {
             });
 
             // Send sync
-            fetch("/api/chat/sync", {
+            apiFetch("/api/chat/sync", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -670,7 +672,7 @@ function ChatRoomContent() {
     const { ciphertext, nonce } = encryptLayer3(content, activeChannel.groupKey);
 
     try {
-      await fetch("/api/chat/send", {
+      await apiFetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -746,7 +748,7 @@ function ChatRoomContent() {
       });
 
       const { ciphertext, nonce } = encryptLayer3(content, activeChannel.groupKey);
-      await fetch("/api/chat/send", {
+      await apiFetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -931,7 +933,7 @@ function ChatRoomContent() {
     if (!channel) return;
 
     // Notify server
-    await fetch("/api/chat/leave", {
+    await apiFetch("/api/chat/leave", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

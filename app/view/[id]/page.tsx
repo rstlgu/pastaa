@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "@/client/navigation";
@@ -212,7 +214,7 @@ export default function ViewPage() {
         return;
       }
 
-      const response = await fetch(`/api/paste/${id}`);
+      const response = await apiFetch(`/api/paste/${id}`);
 
       if (!response.ok) {
         if (response.status === 404) {

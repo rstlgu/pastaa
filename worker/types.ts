@@ -12,6 +12,10 @@ export interface Env {
   RESEND_FROM?: string;
   EMAIL_VERIFICATION_SECRET?: string;
   TURNSTILE_SECRET_KEY?: string;
+  API_LIMITER: RateLimit;
+  ACCESS_LIMITER: RateLimit;
+  SESSION_LIMITER: RateLimit;
+  WRITE_LIMITER: RateLimit;
 }
 export interface FileRow {
   id: string;

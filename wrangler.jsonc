@@ -4,43 +4,60 @@
   "account_id": "5047cd4a2fb6e12bc13dc99bc62a7dc6",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-12",
-  "compatibility_flags": [
-    "nodejs_compat"
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "ratelimits": [
+    {
+      "name": "API_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 360, "period": 60 },
+    },
+    {
+      "name": "ACCESS_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 6, "period": 60 },
+    },
+    {
+      "name": "SESSION_LIMITER",
+      "namespace_id": "1003",
+      "simple": { "limit": 360, "period": 60 },
+    },
+    {
+      "name": "WRITE_LIMITER",
+      "namespace_id": "1004",
+      "simple": { "limit": 30, "period": 60 },
+    },
   ],
-  "workers_dev": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": [
-      "/api/*"
-    ]
+    "run_worker_first": ["/api/*"],
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "pastaa",
       "database_id": "26c44bdf-d450-4743-89d2-ef455145ad35",
-      "migrations_dir": "migrations"
-    }
+      "migrations_dir": "migrations",
+    },
   ],
   "triggers": {
-    "crons": [
-      "* * * * *"
-    ]
+    "crons": ["* * * * *"],
   },
   "vars": {
     "APP_URL": "https://pastaa.io",
-    "PUSHER_CLUSTER": "eu"
+    "PUSHER_CLUSTER": "eu",
   },
   "routes": [
     {
       "pattern": "pastaa.io/*",
-      "zone_id": "f03f43818551aa8b46762e64e606657a"
+      "zone_id": "f03f43818551aa8b46762e64e606657a",
     },
     {
       "pattern": "chat.pastaa.io/*",
-      "zone_id": "f03f43818551aa8b46762e64e606657a"
-    }
-  ]
+      "zone_id": "f03f43818551aa8b46762e64e606657a",
+    },
+  ],
 }

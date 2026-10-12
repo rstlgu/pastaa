@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "@/client/navigation";
@@ -192,7 +194,7 @@ export default function PublicPageEditor() {
   useEffect(() => {
     async function loadPage() {
       try {
-        const response = await fetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
+        const response = await apiFetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
         
         // Controlla se la risposta è ok prima di parsare
         if (!response.ok) {
@@ -299,7 +301,7 @@ export default function PublicPageEditor() {
     setSaved(false);
 
     try {
-      const response = await fetch('/api/public-page', {
+      const response = await apiFetch('/api/public-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -1075,7 +1077,7 @@ export default function PublicPageEditor() {
                             key={option.value}
                             onClick={async () => {
                               try {
-                                const response = await fetch('/api/public-page', {
+                                const response = await apiFetch('/api/public-page', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ 
@@ -1135,7 +1137,7 @@ export default function PublicPageEditor() {
                           key={option.value}
                           onClick={async () => {
                             try {
-                              const response = await fetch('/api/public-page', {
+                              const response = await apiFetch('/api/public-page', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 

@@ -42,6 +42,16 @@ The full built application is also served at http://localhost:8787 by Wrangler. 
 - Default limits: 20 file allocations/hour/IP, 25 MiB of ciphertext allocations/day/IP, 150 MiB/day globally, 360 API requests/minute/IP, 10,000 API requests/day globally. D1 stores persistent counters, with salted IP hashes, and rejects excess use. Failed/abandoned uploads also count toward allocation limits.
 - File and paste API responses are never cacheable. Image preview object URLs are revoked at expiry.
 
+## Protection against automated and distributed abuse
+
+- Every data API, including reads, chat and attachments, requires a signed 20-minute session issued after server-side Turnstile verification. Siteverify must report the exact request hostname and `pastaa-access` action. Tokens are single-use at Cloudflare. Sessions are tied to the host, salted IP/browser fingerprint and expiry, and use HttpOnly, Secure, SameSite=Strict host-only cookies. A change of IP/browser requires a fresh verification.
+- Turnstile pre-clearance is Managed. The zone WAF applies Managed Challenge to `/api/` on both production hosts: unverified traffic is challenged before invoking the Worker or D1. There is no API exemption, including `/api/access` and `/api/health`. The Turnstile widget grants verified visitors clearance for the zone's configured Challenge Passage.
+- The Free WAF rate rule blocks more than 240 `/api/` requests in 10 seconds per IP, for 10 seconds. The threshold leaves room for a complete maximum-size encrypted file upload/download. Counters are local to Cloudflare locations and enforcement is approximate.
+- Native Worker limits run before D1: 360 requests/minute/IP, 360/minute/session, 6 access handshakes/minute/IP and 30 creations/updates/minute/session. These are per Cloudflare location and complement the exact persistent D1 quotas. Invalid/expired sessions and unknown API paths never touch D1. An isolate-local circuit breaker also reduces database calls after the daily global cap is reached.
+- `workers_dev` and preview URLs are disabled, and APIs reject other hosts and cross-origin writes. Production does not accept localhost origins. This closes alternate URLs that would bypass the zone WAF.
+- Editors/chat remain mounted while verification renews; simultaneous browser requests wait for one verification rather than repeating challenges. Home, chat lobby, privacy and terms remain public static pages.
+- These controls reduce abuse but cannot guarantee availability against an unlimited attack or CAPTCHA-solving services. Authorized traffic and Worker rejections can still consume provider quotas; there is no automatic paid upgrade.
+
 ## Publishing without enabling charges
 
 1. Confirm the account's **Workers Free** plan in the authenticated Cloudflare dashboard. The domain's Free plan is separate from Workers pricing.
@@ -50,7 +60,7 @@ The full built application is also served at http://localhost:8787 by Wrangler. 
 4. Apply `npm run db:remote`. Set the secrets from `.dev.vars.example` with `wrangler secret put`; copy existing Pusher/Resend/Turnstile settings securely. Private secrets never belong in `VITE_*` variables.
 5. Run `npm run typecheck`, `npm test`, `npm run build`, and `npx wrangler deploy --dry-run`.
 6. Set `PASTAA_FREE_PLAN_VERIFIED` to the account ID only after checking Workers Free, then run `npm run deploy`. The deploy wrapper rejects R2/paid-product bindings, placeholder database IDs and the wrong account. It does not change billing plans.
-7. Verify the workers.dev deployment before switching the existing `pastaa.io` and `chat.pastaa.io` routes. The account and custom domain setup must be checked for the intended project before cutover.
+7. Verify both production hosts with a real Turnstile session and confirm unverified API traffic is challenged at the WAF. Keep workers.dev and preview URLs disabled. Configure the zone's Managed Challenge and Free rate rule as described above; review those rules separately from code deployments.
 
 Cloudflare Free quotas block requests when exhausted; application limits reduce use but cannot guarantee availability under unlimited traffic. This project never automatically upgrades the account. Existing Pusher and Resend quotas remain independent.
 
