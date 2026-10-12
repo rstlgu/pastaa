@@ -1,6 +1,6 @@
 import type { Env } from "./types";
 import { assert, HttpError, json, validateId } from "./http";
-import { limitApi } from "./rate-limit";
+import { checkCreationBudget, limitApi } from "./rate-limit";
 import { cleanup } from "./cleanup";
 import {
   createFile,
@@ -49,6 +49,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     )
   )
     return json({ error: "API non trovata" }, 404);
+  if (method === "POST" && path === "/api/files") checkCreationBudget("file");
+  if (method === "POST" && path === "/api/paste") checkCreationBudget("paste");
   const client = await limitApi(request, env);
   if (path === "/api/health" && method === "GET") {
     await env.DB.prepare("SELECT id FROM StorageBudget WHERE id=1").first();

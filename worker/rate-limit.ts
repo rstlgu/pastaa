@@ -1,6 +1,36 @@
 import type { Env } from "./types";
 import { assert, hash, HttpError } from "./http";
 let globalBlockedUntil = 0;
+export const CREATION_LIMITS = { file: 300, paste: 500, page: 200 } as const;
+type CreationKind = keyof typeof CREATION_LIMITS;
+const creationBlockedUntil = new Map<CreationKind, number>();
+export function checkCreationBudget(kind: CreationKind) {
+  if (Date.now() < (creationBlockedUntil.get(kind) ?? 0))
+    throw new HttpError(
+      429,
+      "Limite giornaliero dei nuovi contenuti raggiunto. Riprova domani.",
+    );
+}
+export async function limitCreation(env: Env, kind: CreationKind) {
+  checkCreationBudget(kind);
+  if (
+    !(await consume(
+      env.DB,
+      `global-create-${kind}`,
+      CREATION_LIMITS[kind],
+      86400000,
+    ))
+  ) {
+    creationBlockedUntil.set(
+      kind,
+      (Math.floor(Date.now() / 86400000) + 1) * 86400000,
+    );
+    throw new HttpError(
+      429,
+      "Limite giornaliero dei nuovi contenuti raggiunto. Riprova domani.",
+    );
+  }
+}
 export async function consume(
   db: D1Database,
   key: string,
@@ -43,6 +73,7 @@ export async function limitApi(request: Request, env: Env) {
   return key;
 }
 export async function limitAllocation(env: Env, key: string, size: number) {
+  await limitCreation(env, "file");
   if (
     !(await consume(env.DB, `file-count:${key}`, 20, 3600000)) ||
     !(await consume(

@@ -14,6 +14,7 @@ import {
   decryptText,
 } from "../lib/crypto";
 import { issueAccessToken, cookieName, ACCESS_TTL_MS } from "../worker/access";
+import { CREATION_LIMITS } from "../worker/rate-limit";
 const bytesFromBase64 = (value: string) =>
   new Uint8Array(Buffer.from(value, "base64"));
 import type { Env } from "../worker/types";
@@ -837,4 +838,114 @@ test("access handshake verifies Turnstile hostname/action, fails closed and issu
     200,
   );
   assert.equal(calls, 4);
+});
+
+test("daily creation budgets resist IP rotation and deletion while preserving existing page updates", async () => {
+  const bucket = Math.floor(Date.now() / 86400000);
+  const expiry = (bucket + 1) * 86400000;
+  await env.DB.prepare(
+    "INSERT INTO RateLimit(key,count,expiresAt) VALUES(?,?,?)",
+  )
+    .bind(`global-create-file:${bucket}`, CREATION_LIMITS.file - 1, expiry)
+    .run();
+  const f = await makeFile();
+  assert.equal(
+    (
+      await request(`/api/files/${f.fileId}`, "DELETE", undefined, {
+        "X-Upload-Token": f.uploadToken,
+      })
+    ).status,
+    200,
+  );
+  const declaration = {
+    purpose: "chat",
+    mimeType: "text/plain",
+    extension: "txt",
+    plainSize: 1,
+    size: 17,
+    layers: 1,
+    channelHash: "a".repeat(64),
+    expiresInMs: 60000,
+  };
+  assert.equal(
+    (
+      await request("/api/files", "POST", declaration, {
+        "CF-Connecting-IP": "198.51.100.10",
+      })
+    ).status,
+    429,
+  );
+  assert.equal(
+    (
+      await request("/api/files", "POST", declaration, {
+        "CF-Connecting-IP": "198.51.100.11",
+      })
+    ).status,
+    429,
+  );
+  const stored = await env.DB.prepare("SELECT count FROM RateLimit WHERE key=?")
+    .bind(`global-create-file:${bucket}`)
+    .first<{ count: number }>();
+  assert.equal(stored!.count, CREATION_LIMITS.file);
+
+  assert.equal(
+    (
+      await request("/api/public-page", "POST", {
+        id: "existing-page",
+        content: "first",
+        expiresIn: 3600000,
+      })
+    ).status,
+    200,
+  );
+  await env.DB.prepare("UPDATE RateLimit SET count=? WHERE key=?")
+    .bind(CREATION_LIMITS.page, `global-create-page:${bucket}`)
+    .run();
+  assert.equal(
+    (
+      await request(
+        "/api/public-page",
+        "POST",
+        { id: "new-page", content: "new", expiresIn: 3600000 },
+        { "CF-Connecting-IP": "198.51.100.12" },
+      )
+    ).status,
+    429,
+  );
+  assert.equal(
+    (
+      await request("/api/public-page", "POST", {
+        id: "existing-page",
+        content: "updated",
+        expiresIn: 3600000,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await data(await request("/api/public-page?id=existing-page"))).content,
+    "updated",
+  );
+  await env.DB.prepare(
+    "INSERT INTO RateLimit(key,count,expiresAt) VALUES(?,?,?)",
+  )
+    .bind(`global-create-paste:${bucket}`, CREATION_LIMITS.paste, expiry)
+    .run();
+  const { body } = await pasteBody();
+  assert.equal(
+    (
+      await request("/api/paste", "POST", body, {
+        "CF-Connecting-IP": "198.51.100.13",
+      })
+    ).status,
+    429,
+  );
+  assert.equal(
+    (
+      await request("/api/paste", "POST", body, {
+        "CF-Connecting-IP": "198.51.100.14",
+      })
+    ).status,
+    429,
+  );
 });

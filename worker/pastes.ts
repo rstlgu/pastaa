@@ -1,4 +1,5 @@
 import type { Env, FileRow, FileReference, PasteRow } from "./types";
+import { limitCreation } from "./rate-limit";
 import {
   assert,
   hash,
@@ -112,6 +113,7 @@ export async function createPaste(request: Request, env: Env) {
     encryptedFiles = JSON.stringify(refs);
   const storedBytes =
     new TextEncoder().encode(b.encryptedContent + encryptedFiles).length + 4096;
+  await limitCreation(env, "paste");
   await env.DB.prepare(
     "INSERT INTO Paste(id,shortId,encryptedContent,iv,passwordIv,salt,hasPassword,burnAfterReading,expiresAt,createdAt,encryptedFiles,storedBytes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
   )

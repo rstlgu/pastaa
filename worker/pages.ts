@@ -1,5 +1,6 @@
 import type { Env } from "./types";
 import { assert, json, readJson, validateId } from "./http";
+import { limitCreation } from "./rate-limit";
 const DURATIONS = [
   3600000, 14400000, 21600000, 86400000, 604800000, 2592000000,
 ];
@@ -42,6 +43,10 @@ export async function savePage(request: Request, env: Env) {
   );
   const now = Date.now(),
     explicit = b.updateExpiration !== undefined;
+  const existing = await env.DB.prepare("SELECT id FROM PublicPage WHERE id=?")
+    .bind(b.id)
+    .first();
+  if (!existing) await limitCreation(env, "page");
   const page = await env.DB.prepare(
     "INSERT INTO PublicPage(id,content,expiresAt,createdAt,updatedAt,storedBytes) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET content=excluded.content,expiresAt=CASE WHEN PublicPage.expiresAt<=? OR ?=1 THEN excluded.expiresAt ELSE PublicPage.expiresAt END,updatedAt=excluded.updatedAt,storedBytes=excluded.storedBytes RETURNING *",
   )
