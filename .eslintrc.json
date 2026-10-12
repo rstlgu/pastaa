@@ -1,4 +1,1 @@
-{
-  "extends": ["next/core-web-vitals", "next/typescript"]
-}
-
+{"root":true,"ignorePatterns":["dist","node_modules",".wrangler"]}

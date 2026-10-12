@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "@/client/navigation";
 
 export default function ShortLinkPage() {
   const params = useParams();

@@ -5,7 +5,7 @@ import { Shield, Lock, Eye, Database, Cookie, Server } from "lucide-react";
 import { PastaLogo } from "@/components/pasta-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
-import Link from "next/link";
+import { Link } from "@/client/navigation";
 
 export default function PrivacyPage() {
   return (
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold">Conservazione dei Dati</h2>
             <p className="text-muted-foreground">
-              I contenuti condivisi vengono conservati sul server solo per il tempo necessario alla condivisione. Non conserviamo copie dei contenuti dopo che sono stati eliminati. I dati di presenza per la collaborazione in tempo reale vengono eliminati immediatamente dopo 10 secondi di inattività.
+              I messaggi condivisi scadono entro 7 giorni, le pagine collaborative entro 30 giorni e gli allegati della chat entro 10 minuti. Alla scadenza il servizio blocca subito l’accesso; una pulizia periodica elimina i dati attivi. I backup temporanei del fornitore possono conservare lo storico per un periodo limitato. La scadenza non elimina copie già scaricate dai destinatari.
             </p>
           </section>
 

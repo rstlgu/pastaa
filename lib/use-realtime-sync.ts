@@ -5,6 +5,7 @@ import { getPusherClient } from './pusher';
 
 interface ContentUpdate {
   content: string;
+  refresh?: boolean;
   userId: string;
   editorMode: 'code' | 'docs';
   timestamp: number;
@@ -36,8 +37,13 @@ export function useRealtimeSync({
     channelRef.current = channel;
 
     // Listener per aggiornamenti contenuto
-    channel.bind('content-update', (data: ContentUpdate) => {
-      onUpdate(data.content, data.userId);
+    channel.bind('content-update', async (data: ContentUpdate) => {
+      if (data.refresh) {
+        const response = await fetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
+        if (!response.ok) return;
+        const page = await response.json();
+        if (page.exists) onUpdate(page.content, data.userId);
+      } else onUpdate(data.content, data.userId);
     });
 
     return () => {

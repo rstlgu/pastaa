@@ -187,10 +187,10 @@ export const translations = {
     
     // Landing Sections (New)
     featuresTitle: 'Perché scegliere Pastaa',
-    noDatabase: 'Nessun Database',
-    noDatabaseDesc: 'I dati sono nel link, non sui nostri server',
-    deployWithDocker: 'Deploy con Docker',
-    runCommand: 'Avvia la tua istanza in secondi',
+    noDatabase: 'Scadenza automatica',
+    noDatabaseDesc: 'I contenuti scaduti diventano inaccessibili e vengono eliminati',
+    deployWithDocker: 'Deploy su Cloudflare',
+    runCommand: 'Configura la tua istanza seguendo la guida nel repository',
     
     demoSendTitle: 'Invia Messaggi Cifrati',
     demoSendDesc: 'Scrivi il tuo testo, cifralo localmente e condividi il link. La chiave di decifrazione è nel fragment (#) dell\'URL, quindi il server non la vede mai.',
@@ -466,10 +466,10 @@ export const translations = {
     
     // Landing Sections (New)
     featuresTitle: 'Why Choose Pastaa',
-    noDatabase: 'No Database',
-    noDatabaseDesc: 'Data lives in the link, not on our servers',
-    deployWithDocker: 'Deploy with Docker',
-    runCommand: 'Get your instance running in seconds',
+    noDatabase: 'Automatic Expiry',
+    noDatabaseDesc: 'Expired content becomes inaccessible and is automatically deleted',
+    deployWithDocker: 'Deploy on Cloudflare',
+    runCommand: 'Configure your instance using the repository guide',
     
     demoSendTitle: 'Send Encrypted Messages',
     demoSendDesc: 'Write your text, encrypt it locally, and share the link. The decryption key is in the URL fragment (#), so the server never sees it.',

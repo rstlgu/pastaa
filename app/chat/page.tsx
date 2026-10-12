@@ -6,8 +6,8 @@ import { MessageSquare, Lock, Shield, Eye, EyeOff, ArrowRight } from "lucide-rea
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/client/navigation";
+import { useRouter } from "@/client/navigation";
 import { bytesToHex, deriveChatChannelId, deriveGroupKey } from "@/lib/chat-crypto";
 
 interface SavedChannel {

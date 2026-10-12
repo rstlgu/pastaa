@@ -37,3 +37,8 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 
+/dist/
+/.wrangler/
+.dev.vars*
+!.dev.vars.example
+.migration/

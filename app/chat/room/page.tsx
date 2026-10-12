@@ -23,8 +23,8 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Link } from "@/client/navigation";
+import { useRouter, useSearchParams } from "@/client/navigation";
 import Pusher from "pusher-js";
 import {
   generateLayer3KeyPair,
@@ -39,7 +39,8 @@ import {
   randomBytes,
   Layer3Keys,
 } from "@/lib/chat-crypto";
-import { ATTACHMENT_ACCEPT, isAllowedAttachmentMimeType } from "@/lib/allowed-attachments";
+import { ATTACHMENT_ACCEPT, isAllowedAttachmentMimeType, attachmentMime, validateAttachment, validateAttachmentBytes } from "@/lib/allowed-attachments";
+import { uploadEncryptedFile, downloadEncryptedFile as downloadStoredFile } from "@/lib/file-storage";
 import type { ChatMessageEvent, MemberJoinEvent, MemberLeaveEvent, MemberSyncEvent } from "@/lib/pusher";
 
 interface ChatMember {
@@ -61,6 +62,7 @@ interface ChatMessage {
 }
 
 interface ChatFileContent {
+  readToken: string;
   type: "file";
   fileId: string;
   name: string;
@@ -103,8 +105,8 @@ interface SavedChannel {
   groupKeyHex: string;
 }
 
-const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
-const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+const PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
+const PUSHER_CLUSTER = import.meta.env.VITE_PUSHER_CLUSTER;
 const MAX_CHAT_FILE_SIZE = 10 * 1024 * 1024;
 const CHAT_FILE_DEFAULT_EXPIRY_MS = 10 * 60 * 1000;
 const CHAT_FILE_EXPIRY_OPTIONS = [
@@ -165,6 +167,7 @@ function parseChatFileContent(content: string): ChatFileContent | undefined {
     if (
       parsed.type === "file" &&
       typeof parsed.fileId === "string" &&
+      typeof parsed.readToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(parsed.readToken) &&
       typeof parsed.name === "string" &&
       typeof parsed.mimeType === "string" &&
       typeof parsed.size === "number" &&
@@ -314,6 +317,19 @@ function ChatRoomContent() {
     setPreparingFileName("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [activeChannelName]);
+
+  useEffect(() => {
+    const expiredIds = new Set<string>();
+    channels.forEach(channel => channel.messages.forEach(message => {
+      if (message.file && Date.parse(message.file.expiresAt) <= now) expiredIds.add(message.file.fileId);
+    }));
+    if (![...expiredIds].some(id => imagePreviews.has(id))) return;
+    setImagePreviews(previous => {
+      const next = new Map(previous);
+      expiredIds.forEach(id => { const url = next.get(id)?.objectUrl; if (url) { URL.revokeObjectURL(url); imagePreviewUrlsRef.current.delete(url); } next.delete(id); });
+      return next;
+    });
+  }, [now, channels, imagePreviews]);
 
   // Connect to a channel
   const connectToChannel = useCallback(async (channelName: string, hash: string, groupKey: Uint8Array) => {
@@ -682,7 +698,7 @@ function ChatRoomContent() {
       return;
     }
 
-    if (!isAllowedAttachmentMimeType(file.type)) {
+    if (!isAllowedAttachmentMimeType(attachmentMime(file))) {
       alert(t("unsupportedChatFileFormat"));
       return;
     }
@@ -696,31 +712,14 @@ function ChatRoomContent() {
     setUploadingFileName(file.name);
 
     try {
-      const formData = new FormData();
-      formData.append("channelHash", activeChannel.hash);
-      formData.append("mimeType", file.type || "application/octet-stream");
-      formData.append("expiresInMs", String(expiresInMs));
-      formData.append("file", new Blob([pendingFile.encryptedBuffer], { type: file.type || "application/octet-stream" }));
-
-      const uploadResponse = await fetch("/api/chat/file", {
-        method: "POST",
-        body: formData,
-      });
-      const uploadData = (await uploadResponse.json().catch(() => ({}))) as {
-        fileId?: string;
-        expiresAt?: string;
-        error?: string;
-      };
-
-      if (!uploadResponse.ok || !uploadData.fileId || !uploadData.expiresAt) {
-        throw new Error(uploadData.error || t("fileUploadFailed"));
-      }
+      const uploadData = await uploadEncryptedFile(new Uint8Array(pendingFile.encryptedBuffer), file, "chat", { channelHash: activeChannel.hash, expiresInMs });
 
       const fileContent: ChatFileContent = {
         type: "file",
         fileId: uploadData.fileId,
+        readToken: uploadData.readToken,
         name: file.name,
-        mimeType: file.type || "application/octet-stream",
+        mimeType: attachmentMime(file),
         size: file.size,
         expiresAt: uploadData.expiresAt,
         fileNonce: pendingFile.fileNonce,
@@ -796,7 +795,7 @@ function ChatRoomContent() {
   const handlePendingFileChange = useCallback(async (file: File) => {
     if (!activeChannel) return;
 
-    if (!isAllowedAttachmentMimeType(file.type)) {
+    if (!isAllowedAttachmentMimeType(attachmentMime(file))) {
       alert(t("unsupportedChatFileFormat"));
       return;
     }
@@ -809,6 +808,7 @@ function ChatRoomContent() {
     setPreparingFileName(file.name);
 
     try {
+      await validateAttachment(file);
       const fileBytes = new Uint8Array(await file.arrayBuffer());
       const encryptedFile = encryptBytesLayer3(fileBytes, activeChannel.groupKey);
       const encryptedBuffer = encryptedFile.ciphertext.buffer.slice(
@@ -835,13 +835,9 @@ function ChatRoomContent() {
 
     setDownloadingFileId(file.fileId);
     try {
-      const response = await fetch(`/api/chat/file/${file.fileId}`);
-      if (!response.ok) {
-        throw new Error(response.status === 410 ? t("fileDestroyed") : t("downloadFailed"));
-      }
-
-      const encryptedBytes = new Uint8Array(await response.arrayBuffer());
+      const encryptedBytes = await downloadStoredFile(file.fileId, file.readToken);
       const decryptedBytes = decryptBytesLayer3(encryptedBytes, file.fileNonce, groupKey);
+      await validateAttachmentBytes(file.name, file.mimeType, decryptedBytes, file.size);
       const decryptedBuffer = decryptedBytes.buffer.slice(
         decryptedBytes.byteOffset,
         decryptedBytes.byteOffset + decryptedBytes.byteLength
@@ -876,11 +872,9 @@ function ChatRoomContent() {
     });
 
     try {
-      const response = await fetch(`/api/chat/file/${file.fileId}`);
-      if (!response.ok) throw new Error(response.status === 410 ? t("fileDestroyed") : t("downloadFailed"));
-
-      const encryptedBytes = new Uint8Array(await response.arrayBuffer());
+      const encryptedBytes = await downloadStoredFile(file.fileId, file.readToken);
       const decryptedBytes = decryptBytesLayer3(encryptedBytes, file.fileNonce, groupKey);
+      await validateAttachmentBytes(file.name, file.mimeType, decryptedBytes, file.size);
       const decryptedBuffer = decryptedBytes.buffer.slice(
         decryptedBytes.byteOffset,
         decryptedBytes.byteOffset + decryptedBytes.byteLength

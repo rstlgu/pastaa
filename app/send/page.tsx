@@ -26,15 +26,16 @@ import { PastaLogo } from "@/components/pasta-logo";
 import { useLanguage } from "@/components/language-provider";
 import { FeatureBadge } from "@/components/feature-badge";
 import { GitHubBadge } from "@/components/github-badge";
-import { ATTACHMENT_ACCEPT, isAllowedAttachmentMimeType } from "@/lib/allowed-attachments";
-import Link from "next/link";
+import { ATTACHMENT_ACCEPT, isAllowedAttachmentMimeType, attachmentMime, validateAttachment } from "@/lib/allowed-attachments";
+import { Link } from "@/client/navigation";
 import { toast } from "sonner";
+import { uploadEncryptedFile, discardStoredFile, bytesFromBase64, type StoredFile } from "@/lib/file-storage";
 
 const MAX_TEXT_SIZE = 100 * 1024;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 10;
 const DEFAULT_EXPIRES_IN = "7d";
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 const VERIFIED_EMAIL_STORAGE_KEY = "pastaa_verified_sender_email";
 
 interface EncryptedFilePayload {
@@ -133,7 +134,7 @@ function TurnstileChallenge({ onTokenChange }: TurnstileChallengeProps) {
   if (!TURNSTILE_SITE_KEY) {
     return (
       <p className="text-center text-xs text-destructive">
-        CAPTCHA non configurato: imposta NEXT_PUBLIC_TURNSTILE_SITE_KEY.
+        La verifica anti-bot non è disponibile. Riprova più tardi.
       </p>
     );
   }
@@ -289,12 +290,14 @@ export default function HomePage() {
       return;
     }
 
-    if (!selectedFiles.every((file) => isAllowedAttachmentMimeType(file.type))) {
+    if (!selectedFiles.every((file) => isAllowedAttachmentMimeType(attachmentMime(file)))) {
       alert(t('fileTypeNotAllowed'));
       return;
     }
 
     setIsLoading(true);
+    const uploadedFiles: StoredFile[] = [];
+    let created = false;
 
     try {
       const key = await generateKey();
@@ -308,12 +311,13 @@ export default function HomePage() {
       let encryptedFiles: EncryptedFilePayload[] = [];
 
       for (const file of selectedFiles) {
+        await validateAttachment(file);
         const fileBuffer = await file.arrayBuffer();
         const fileEncryption = await encryptBytes(fileBuffer, key);
         const metadataEncryption = await encryptText(
           JSON.stringify({
             name: file.name,
-            type: file.type || "application/octet-stream",
+            type: attachmentMime(file),
             size: file.size,
           }),
           key
@@ -352,6 +356,14 @@ export default function HomePage() {
         );
       }
 
+      const storedFiles = [];
+      for (let i = 0; i < encryptedFiles.length; i++) {
+        const encrypted = encryptedFiles[i];
+        const stored = await uploadEncryptedFile(bytesFromBase64(encrypted.encryptedContent), selectedFiles[i], "paste", { layers: usePassword ? 2 : 1 });
+        uploadedFiles.push(stored);
+        const { encryptedContent: _ciphertext, ...metadata } = encrypted;
+        storedFiles.push({ ...metadata, fileId: stored.fileId, readToken: stored.readToken });
+      }
       const response = await fetch("/api/paste", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -363,7 +375,7 @@ export default function HomePage() {
           hasPassword: usePassword && Boolean(normalizedPassword),
           burnAfterReading,
           expiresIn: showExpiry ? expiresIn : DEFAULT_EXPIRES_IN,
-          encryptedFiles,
+          encryptedFiles: storedFiles,
           fileSize: totalFileSize,
         }),
       });
@@ -373,12 +385,14 @@ export default function HomePage() {
       }
 
       const { id, shortId } = await response.json();
+      created = true;
       setPasteId(id);
       setShortId(shortId);
       setKeyString(keyString);
     } catch (error) {
+      if (!created) await Promise.all(uploadedFiles.map(discardStoredFile));
       console.error("Errore:", error);
-      alert(t('errorCreating'));
+      alert(error instanceof Error ? error.message : t('errorCreating'));
     } finally {
       setIsLoading(false);
     }
@@ -587,7 +601,7 @@ export default function HomePage() {
     const nextFiles = [...selectedFiles, ...files].slice(0, MAX_FILE_COUNT + 1);
     const totalFileSize = getTotalFileSize(nextFiles);
 
-    if (files.some((file) => !isAllowedAttachmentMimeType(file.type))) {
+    if (files.some((file) => !isAllowedAttachmentMimeType(attachmentMime(file)))) {
       setFileError(t('fileTypeNotAllowed'));
       e.target.value = "";
       return;

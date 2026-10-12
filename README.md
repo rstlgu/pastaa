@@ -1,345 +1,77 @@
-<div align="center">
-  <br />
-  <img src="public/logo.svg" alt="Pastaa Logo" width="80" height="80" />
-  <h1>Pastaa</h1>
-  <p><strong>Secure Text Sharing, Real-time Collaboration & Encrypted Chat</strong></p>
-  <br />
-  <p>
-    <a href="#features">Features</a> •
-    <a href="#chat">Chat</a> •
-    <a href="#technology-stack">Tech Stack</a> •
-    <a href="#quick-start">Quick Start</a> •
-    <a href="#docker">Docker</a> •
-    <a href="#security">Security</a>
-  </p>
-  <br />
-</div>
+# Pastaa on Cloudflare Free
 
----
+Pastaa uses a static React/Vite frontend, Cloudflare Workers APIs and D1. It does not provision R2, a paid Workers subscription, Supabase, or PostgreSQL. Chat delivery continues to use the existing Pusher account; optional email sharing uses the existing Resend/Turnstile configuration.
 
-## Features
+## Local development
 
-### Send (Encrypted Paste)
-- **End-to-End Encryption** — AES-GCM 256-bit, keys never leave your browser
-- **Zero Registration** — No accounts, no tracking, no cookies
-- **Burn After Reading** — Automatic deletion after first view
-- **Password Protection** — Optional second layer of security
-- **Encrypted Attachments** — Files are encrypted client-side before upload
-- **Email Sharing** — Open your mail client with a ready-to-send encrypted link
-- **Verified Sender Email** — Email sharing requires confirming your address on that browser
-- **Disposable Email Blocking** — Temporary email domains are rejected for sender and recipient addresses
-- **Default Expiration** — Pastes auto-destruct after 7 days when no duration is selected
+Requires Node.js 22 or newer. New uploads use 128 KiB chunks to stay within the Free CPU budget; legacy imported files retain their original layout.
 
-### Share (Real-time Collaboration)
-- **Live Collaboration** — Multiple users editing simultaneously
-- **Presence Indicators** — See who's viewing in real-time
-- **Remote Cursors** — See collaborators' cursors move in real time
-- **Custom Expiry** — Set content lifetime: 1 hour to 30 days, or never
-- **Code Editor** — Syntax highlighting for 12+ languages
-
-### Chat (Encrypted Group Chat)
-- **End-to-End Encryption** — PBKDF2-SHA256 + ChaCha20-Poly1305 over TLS
-- **No Storage** — Messages are never stored on the server
-- **Required Channel Password** — Room keys are derived in the browser
-- **Private Channel IDs** — Realtime channel identifiers depend on channel name + password
-- **Encrypted File Attachments** — Up to 10MB, encrypted in the browser and auto-destroyed after 10 minutes
-- **Real-time** — Instant message delivery via WebSockets
-- **Zero Knowledge** — Server cannot read your messages
-
----
-
-## Chat
-
-Pastaa Chat is inspired by [ChatCrypt](https://www.chatcrypt.com) and provides secure group messaging with end-to-end encryption.
-
-### How It Works
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      LAYER 1: TLS                               │
-│  Browser ←──────────── HTTPS ──────────────→ Server             │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────────┐
-│              LAYER 2: Browser Key Derivation                    │
-│  channel name + required password -> PBKDF2-SHA256              │
-│  250,000 iterations -> 256-bit room key                         │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────────┐
-│                LAYER 3: End-to-End (E2E)                        │
-│  ChaCha20-Poly1305 encryption                                   │
-│  Key never leaves the browser                                   │
-│  Only users with the same password can decrypt                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-The realtime transport is handled by Pusher. Pastaa sends only encrypted message payloads and metadata needed for delivery. The raw channel password is never sent to the server and is not stored in `sessionStorage`; the browser keeps only derived room material for the current tab session.
-
-### Chat Features
-
-| Feature | Description |
-|---------|-------------|
-| Channel-based | Create or join channels by name |
-| Required password | Messages encrypted with a room key derived from the channel password |
-| Private channel ID | Pusher channel ID is derived from channel name + password |
-| Encrypted files | Files are encrypted locally, stored as ciphertext in Supabase Storage, and expire after 10 minutes |
-| No persistence | Messages exist only during session |
-| Telegram-style avatars | Colored initials for each user |
-| Real-time presence | See who's in the channel |
-
----
-
-## Technology Stack
-
-| Category | Technology |
-|----------|------------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| UI | React, Tailwind CSS, Shadcn UI |
-| Animations | Framer Motion |
-| Encryption | Web Crypto API, @noble/ciphers |
-| Database | PostgreSQL + Prisma |
-| Editor | CodeMirror, TipTap |
-| Real-time | Pusher (WebSockets) |
-| File Storage | Supabase Storage (encrypted chat attachments) |
-| Deployment | Vercel, Docker |
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- PostgreSQL database
-- Pusher account (for Chat feature)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/pastaamaster/pastaa.git
-cd pastaa
-
-# Install dependencies
-npm install
-
-# Configure environment
+```sh
+npm ci
 cp .env.example .env.local
-# Edit .env.local with your settings
-
-# Setup database
-npx prisma db push
-
-# Start development server
-npm run dev
+cp .dev.vars.example .dev.vars
+# Set public keys in .env.local and private server settings in .dev.vars.
+# RATE_LIMIT_SECRET and EMAIL_VERIFICATION_SECRET must be independent random secrets of at least 32 characters.
+npm run db:local
+npm run build
+npm run dev:api
+# In another terminal, npm run dev for frontend hot reload.
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+The full built application is also served at http://localhost:8787 by Wrangler. Static pages/assets avoid server rendering and do not consume dynamic Worker requests. Existing `/v/:shortId`, `/view/:id`, shared page URLs and `chat.pastaa.io` routes are preserved.
 
-### Environment Variables
+## Mandatory expiry
 
-```env
-# Database (required for encrypted pastes and share pages)
-DATABASE_URL=postgres://USER:PASSWORD@HOST:6543/postgres?sslmode=require&pgbouncer=true
+- Paste expiry: 1 hour, 4 hours, 1 day or 7 days; default 7 days.
+- Share pages: 1/4/6 hours, 1/7/30 days; default 1 day. Indefinite retention is disabled.
+- Chat attachments: 30 seconds, 1/2/5/10 minutes. The timer starts only when all chunks have been verified and the upload completes.
+- Incomplete uploads and completed, unattached paste uploads expire after 10 minutes.
+- Every file metadata and chunk request checks the server deadline. Expired ciphertext is never served while waiting for cleanup.
+- An indexed, bounded Worker Cron runs every minute and deletes expired metadata and ciphertext chunks even if nobody opens the file. Cascading foreign keys and database triggers release the reserved space atomically. Scheduling delays can delay physical cleanup, but cannot extend access.
+- Burn-after-reading uses an atomic winning read. Text is deleted immediately. The first reader has at most 120 seconds to transfer encrypted attachments; successful transfers delete their chunks immediately. Concurrent readers cannot claim the same attachment twice.
+- Timers remove active application data. They cannot revoke files already downloaded by a recipient or erase Cloudflare's retained Time Travel history.
 
-# Public app URL (recommended for email links)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+## Attachment controls
 
-# Pusher (required for Chat)
-NEXT_PUBLIC_PUSHER_KEY=your_key
-NEXT_PUBLIC_PUSHER_CLUSTER=eu
-PUSHER_APP_ID=your_app_id
-PUSHER_SECRET=your_secret
+- At most 10 files per paste and 10 MiB of total original data; chat files are individually limited to 10 MiB.
+- Allowlist: JPEG, PNG, WebP, GIF, PDF and UTF-8 TXT/Markdown/CSV. Archives, HTML, SVG and executables are blocked.
+- Client validation checks name, extension, MIME, actual byte length and file signatures before encryption and again after decryption. Invalid/empty files are rejected. Images are decoded locally with a maximum of 8,192 pixels per dimension and 40 million pixels; PDF trailers are checked and common active-content dictionary entries are rejected.
+- The server sees ciphertext only. It validates declared allowed formats, exact ciphertext overhead for one/two encryption layers, actual streamed chunk sizes, SHA-256 digests, ordinal bounds, complete chunk coverage, upload capability and download capability. MIME claims cannot prove the contents of ciphertext; this is not a server antivirus scanner.
+- Unpredictable tokens are sent in request headers; only their hashes are stored alongside the file. Paste references contain recipient capabilities, and never encryption keys.
+- Upload tickets reserve the entire eventual encoded size before accepting any data. A transactional 200 MiB application budget leaves headroom below D1's 500 MB database limit.
+- Default limits: 20 file allocations/hour/IP, 25 MiB of ciphertext allocations/day/IP, 150 MiB/day globally, 360 API requests/minute/IP, 10,000 API requests/day globally. D1 stores persistent counters, with salted IP hashes, and rejects excess use. Failed/abandoned uploads also count toward allocation limits.
+- File and paste API responses are never cacheable. Image preview object URLs are revoked at expiry.
 
-# Supabase Storage (required for encrypted Chat file attachments)
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_CHAT_FILES_BUCKET=chat-files
+## Publishing without enabling charges
 
-# Resend (optional, for Send by email)
-RESEND_API_KEY=
-RESEND_FROM=Pastaa <noreply@your-domain.tld>
-EMAIL_VERIFICATION_SECRET=
+1. Confirm the account's **Workers Free** plan in the authenticated Cloudflare dashboard. The domain's Free plan is separate from Workers pricing.
+2. Authenticate Wrangler with only account/user read, Workers scripts/routes edit, D1 edit and zone read scopes. Do not enable R2 or upgrade Workers.
+3. Create a D1 database named `pastaa` using `npx wrangler d1 create pastaa`, then put its UUID in `wrangler.jsonc`.
+4. Apply `npm run db:remote`. Set the secrets from `.dev.vars.example` with `wrangler secret put`; copy existing Pusher/Resend/Turnstile settings securely. Private secrets never belong in `VITE_*` variables.
+5. Run `npm run typecheck`, `npm test`, `npm run build`, and `npx wrangler deploy --dry-run`.
+6. Set `PASTAA_FREE_PLAN_VERIFIED` to the account ID only after checking Workers Free, then run `npm run deploy`. The deploy wrapper rejects R2/paid-product bindings, placeholder database IDs and the wrong account. It does not change billing plans.
+7. Verify the workers.dev deployment before switching the existing `pastaa.io` and `chat.pastaa.io` routes. The account and custom domain setup must be checked for the intended project before cutover.
 
-# Cloudflare Turnstile (required when Send by email is enabled)
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=
-TURNSTILE_SECRET_KEY=
+Cloudflare Free quotas block requests when exhausted; application limits reduce use but cannot guarantee availability under unlimited traffic. This project never automatically upgrades the account. Existing Pusher and Resend quotas remain independent.
+
+## Preserving existing data
+
+`prisma/schema.prisma` documents the source PostgreSQL schema only; Prisma is not used by the application.
+
+Run the read-only import using a local, ignored env file with the existing `DATABASE_URL`:
+
+```sh
+node --env-file=.env.migration.local scripts/import-postgres.mjs
 ```
 
----
+The script reads an internally consistent PostgreSQL snapshot, imports active pastes/pages through parameterized D1 queries, preserves IDs and encryption metadata, preserves legacy 512 KiB ciphertext chunks, and prints counts only. It aborts if the live data cannot fit the application budget. Existing expired rows are excluded; indefinite paste/page retention is capped at 7/30 days. Source data is never deleted. PostgreSQL TLS uses `verify-full`; Supabase imports use the official pinned CA bundle from the [Supabase CLI](https://github.com/supabase/cli/tree/develop/apps/cli-go/internal/gen/types/templates). Set `PGSSLROOTCERT` to override the trusted root for another provider.
 
-## Docker
+Chat messages are already ephemeral. Supabase chat attachments have at most 10 minutes of lifetime: allow existing transfers to expire before changing the chat route. Freeze writes to the old application for the final snapshot/import/cutover so writes made during the transition cannot be lost. Keep the old deployment and database available for rollback until production verification passes.
 
-### Quick Start with Docker Compose
+## Verification
 
-```bash
-# Clone the repository
-git clone https://github.com/pastaamaster/pastaa.git
-cd pastaa
+`npm test` runs API integration tests against a real local D1 engine, including concurrent reads, transactional ownership/budget controls, malformed/incomplete uploads, expiry checks and scheduled cascading deletion. The deployment has also been checked in a browser for encrypted text/files and two-participant chat. Live logs for 128 KiB chunks showed successful operations within the 10 ms Free CPU budget in the sampled run; this is a measurement, not an unlimited-traffic guarantee. Local tests do not enforce the remote CPU limit.
 
-# Create .env file with Pusher credentials (for Chat)
-cat > .env << EOF
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-PUSHER_APP_ID=your_app_id
-PUSHER_SECRET=your_secret
-NEXT_PUBLIC_PUSHER_KEY=your_key
-NEXT_PUBLIC_PUSHER_CLUSTER=eu
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_CHAT_FILES_BUCKET=chat-files
-RESEND_API_KEY=
-RESEND_FROM=Pastaa <noreply@your-domain.tld>
-EMAIL_VERIFICATION_SECRET=
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=
-TURNSTILE_SECRET_KEY=
-EOF
+Compatible dependency security fixes were applied, including Tiptap, ProseMirror, Faker and React Router. Remaining npm advisories concern the Tailwind build tool chain; user content is not passed to that compiler.
 
-# Start the stack
-docker-compose up -d
-
-# Run migrations
-docker-compose run --rm migrate
-```
-
-The app will be available at [http://localhost:3000](http://localhost:3000)
-
-### Docker Compose Services
-
-| Service | Description | Port |
-|---------|-------------|------|
-| `app` | Next.js application | 3000 |
-| `db` | PostgreSQL database | 5432 (internal) |
-| `migrate` | One-time migration job | - |
-
-### Build Docker Image Manually
-
-```bash
-# Build the image
-docker build -t pastaa \
-  --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
-  --build-arg NEXT_PUBLIC_PUSHER_KEY="your_key" \
-  --build-arg NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
-  --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="your_site_key" \
-  .
-
-# Run with external database
-docker run -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:pass@host:5432/db" \
-  -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
-  -e PUSHER_APP_ID="your_app_id" \
-  -e PUSHER_SECRET="your_secret" \
-  -e NEXT_PUBLIC_PUSHER_KEY="your_key" \
-  -e NEXT_PUBLIC_PUSHER_CLUSTER="eu" \
-  -e SUPABASE_URL="https://your-project.supabase.co" \
-  -e SUPABASE_SERVICE_ROLE_KEY="your_service_role_key" \
-  -e SUPABASE_CHAT_FILES_BUCKET="chat-files" \
-  -e RESEND_API_KEY="your_resend_key" \
-  -e RESEND_FROM="Pastaa <noreply@your-domain.tld>" \
-  -e EMAIL_VERIFICATION_SECRET="your_random_secret" \
-  -e NEXT_PUBLIC_TURNSTILE_SITE_KEY="your_site_key" \
-  -e TURNSTILE_SECRET_KEY="your_secret_key" \
-  pastaa
-```
-
-### Self-Hosting Requirements
-
-| Component | Required | Notes |
-|-----------|----------|-------|
-| PostgreSQL | Yes | For storing encrypted pastes and share pages |
-| Pusher | Only for Chat | Free tier available at pusher.com |
-| Supabase Storage | Only for Chat file attachments | Private bucket recommended |
-| Redis | No | Not required |
-| Object Storage | Optional | Only encrypted chat file blobs use object storage |
-
-### What Works Without Pusher
-
-| Feature | Without Pusher |
-|---------|----------------|
-| Send (Encrypted Paste) | ✅ Works |
-| View Paste | ✅ Works |
-| Share (Collaboration) | ✅ Works (presence disabled) |
-| Chat | ❌ Requires Pusher |
-
----
-
-## Security
-
-### Encryption Details
-
-| Feature | Algorithm | Key Size |
-|---------|-----------|----------|
-| Send (Paste) | AES-GCM | 256-bit |
-| Chat Messages | ChaCha20-Poly1305 | 256-bit |
-| Chat Files | ChaCha20-Poly1305 | 256-bit |
-| Chat Key Derivation | PBKDF2-SHA256, 250,000 iterations | 256-bit |
-| Chat Channel ID | SHA-256(channel name + password) | 256-bit |
-
-### Security Guarantees
-
-| Feature | Status |
-|---------|--------|
-| Keys transmitted to server | Never |
-| Server can read your content | No |
-| Chat messages stored | Never |
-| Raw chat password stored locally | No |
-| User tracking | None |
-| Cookies | None |
-| Automatic expiry deletion | Yes |
-
-### Chat Security Model
-
-Pastaa Chat uses a shared-room E2E model:
-
-- The channel password is required and never leaves the browser.
-- The browser derives a 256-bit room key with PBKDF2-SHA256 and uses it to encrypt/decrypt messages with ChaCha20-Poly1305.
-- File attachments are encrypted locally before upload. Supabase Storage receives only ciphertext and files are rejected after a fixed 10-minute expiry.
-- The server and Pusher receive only encrypted message payloads, nonces, delivery metadata, and a channel identifier derived from the channel name + password.
-- Anyone with the same channel name and password can join and decrypt messages in that room. Pastaa does not provide Signal-style per-device identity verification or per-message forward secrecy.
-
-### Zero Knowledge Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         YOUR BROWSER                             │
-├─────────────────────────────────────────────────────────────────┤
-│  1. Generate encryption key                                      │
-│  2. Encrypt content with key                                     │
-│  3. Send encrypted data to server                               │
-│  4. Key stays in URL fragment (#) — never sent to server        │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                           SERVER                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  • Receives only encrypted content                              │
-│  • Cannot decrypt without the key                               │
-│  • Chat: only relays encrypted messages                         │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## License
-
-MIT License — Use freely!
-
----
-
-<div align="center">
-  <sub>Built with care by <a href="https://github.com/pastaamaster">pastaamaster</a></sub>
-</div>
+For final cutover, set `MIGRATION_FREEZE=1`, route both domains’ APIs to the Worker, allow outstanding source requests/transfers to finish, import the final snapshot, switch the full-domain routes and remove the freeze. The API responds with `503` and `Retry-After` while frozen. Keep Vercel available for rollback.

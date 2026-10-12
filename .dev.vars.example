@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local development. Use wrangler secret put for production.
+PUSHER_APP_ID=
+PUSHER_KEY=
+PUSHER_SECRET=
+PUSHER_CLUSTER=eu
+RESEND_API_KEY=
+RESEND_FROM=
+EMAIL_VERIFICATION_SECRET=
+TURNSTILE_SECRET_KEY=
+RATE_LIMIT_SECRET=
+APP_URL=http://localhost:5173

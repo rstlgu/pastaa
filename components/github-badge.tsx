@@ -7,8 +7,8 @@ import { Github, ExternalLink, Code, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/language-provider";
 
-const GITHUB_REPO_URL = "https://github.com/pastaamaster/pastaa.git";
-const GITHUB_REPO_LABEL = "github.com/pastaamaster/pastaa";
+const GITHUB_REPO_URL = "https://github.com/rstlgu/pastaa.git";
+const GITHUB_REPO_LABEL = "github.com/rstlgu/pastaa";
 
 interface GitHubBadgeProps {
   show?: boolean;

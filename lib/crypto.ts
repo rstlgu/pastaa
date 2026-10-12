@@ -20,14 +20,14 @@ export async function generateKey(): Promise<CryptoKey> {
     },
     true,
     ["encrypt", "decrypt"]
-  );
+  ) as CryptoKey;
 }
 
 /**
  * Esporta una chiave in formato base64url
  */
 export async function exportKey(key: CryptoKey): Promise<string> {
-  const exported = await crypto.subtle.exportKey("raw", key);
+  const exported = await crypto.subtle.exportKey("raw", key) as ArrayBuffer;
   return arrayBufferToBase64Url(exported);
 }
 
@@ -58,7 +58,7 @@ export async function encryptText(
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
 
-  return encryptBytes(data.buffer, key);
+  return encryptBytes(data.buffer as ArrayBuffer, key);
 }
 
 /**

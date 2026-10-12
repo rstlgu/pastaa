@@ -9,7 +9,7 @@ import { useLanguage } from "@/components/language-provider";
 import { GitHubBadge } from "@/components/github-badge";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { TypingTextReveal } from "@/components/typing-text-reveal";
-import Link from "next/link";
+import { Link } from "@/client/navigation";
 import { cn } from "@/lib/utils";
 
 // --- Components ---
@@ -132,9 +132,9 @@ function FeatureItem({ icon: Icon, title, description, index }: { icon: LucideIc
   );
 }
 
-function DockerTerminal() {
+function DeployTerminal() {
   const [copied, setCopied] = useState(false);
-  const command = "docker run -p 3000:3000 pastaa/pastaa";
+  const command = "npm run deploy";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(command);
@@ -167,7 +167,7 @@ function DockerTerminal() {
           </button>
         </div>
         <div className="text-gray-500 animate-pulse">
-          Waiting for container to start...
+          Cloudflare Workers + D1
         </div>
       </div>
     </div>
@@ -953,7 +953,7 @@ export default function Home() {
                 {t('runCommand')}
               </motion.p>
               <motion.div variants={itemVariants} className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <Link href="https://github.com/pastaamaster/pastaa.git" target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:opacity-90 transition-opacity">
+                <Link href="https://github.com/rstlgu/pastaa" target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-yellow-400 text-black font-bold hover:opacity-90 transition-opacity">
                   <Github className="w-5 h-5" />
                   GitHub Repo
                 </Link>
@@ -967,7 +967,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="flex-1 w-full"
             >
-              <DockerTerminal />
+              <DeployTerminal />
             </motion.div>
           </div>
         </div>
@@ -986,7 +986,7 @@ export default function Home() {
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link href="/terms" className="hover:text-primary transition-colors">{t('termsOfService')}</Link>
               <Link href="/privacy" className="hover:text-primary transition-colors">{t('privacyPolicy')}</Link>
-              <a href="https://github.com/pastaamaster/pastaa.git" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
+              <a href="https://github.com/rstlgu/pastaa" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
             </div>
           </div>
         </div>

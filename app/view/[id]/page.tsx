@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "@/client/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,8 +16,10 @@ import {
   Download,
   FileText,
 } from "lucide-react";
+import { hydratePasteFiles } from "@/lib/file-storage";
+import { validateAttachmentBytes } from "@/lib/allowed-attachments";
 import { importKey, decryptText, decryptBytes } from "@/lib/crypto";
-import Link from "next/link";
+import { Link } from "@/client/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BurnTextReveal } from "@/components/burn-text-reveal";
 import { E2EBadge } from "@/components/e2e-badge";
@@ -27,6 +29,7 @@ import { GitHubBadge } from "@/components/github-badge";
 import { useLanguage } from "@/components/language-provider";
 
 interface PasteData {
+  expiresAt: string;
   encryptedContent: string;
   iv: string;
   passwordIv?: string | null;
@@ -120,6 +123,18 @@ export default function ViewPage() {
     };
   }, [decryptedFiles]);
 
+  useEffect(() => {
+    if (!pasteData?.expiresAt) return;
+    const check = () => {
+      if (Date.now() < Date.parse(pasteData.expiresAt)) return;
+      setDecryptedText(""); setDecryptedFiles([]); setPasteData(null); setNeedsPassword(false); setError("Paste scaduto");
+    };
+    const timer = window.setInterval(check, 1000);
+    document.addEventListener("visibilitychange", check);
+    check();
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", check); };
+  }, [pasteData?.expiresAt]);
+
   async function decryptPasteData(
     data: PasteData,
     keyString: string,
@@ -169,6 +184,7 @@ export default function ViewPage() {
           decryptText(file.encryptedMetadata, file.metadataIv, key),
         ]);
         const metadata = JSON.parse(metadataText) as FileMetadata;
+        await validateAttachmentBytes(metadata.name, metadata.type, new Uint8Array(fileBuffer), metadata.size);
         const blob = new Blob([new Uint8Array(fileBuffer)], {
           type: metadata.type || "application/octet-stream",
         });
@@ -210,7 +226,7 @@ export default function ViewPage() {
         return;
       }
 
-      const data = await response.json();
+      const data = await hydratePasteFiles(await response.json());
       setBurnAfterReading(data.burnAfterReading);
       setPasteData(data);
 
