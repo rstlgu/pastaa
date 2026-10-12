@@ -111,8 +111,8 @@ export const translations = {
     localDecryptionDesc: 'Solo nel tuo browser',
     localDecryptionDescLong: 'Solo chi ha il link può decifrare nel proprio browser',
     zeroKnowledge: 'Zero Knowledge',
-    zeroKnowledgeDesc: 'Il server salva solo dati cifrati.',
-    zeroKnowledgeDescLong: 'Il server salva solo dati cifrati. Nemmeno gli amministratori possono leggere il tuo testo.',
+    zeroKnowledgeDesc: 'Messaggi e allegati di Invia sono cifrati nel browser.',
+    zeroKnowledgeDescLong: 'Messaggi e allegati di Invia sono cifrati nel browser. Le pagine collaborative sono pubbliche per chi conosce il link.',
     understood: 'Ho capito',
     
     // Footer
@@ -390,8 +390,8 @@ export const translations = {
     localDecryptionDesc: 'Only in your browser',
     localDecryptionDescLong: 'Only those with the link can decrypt in their browser',
     zeroKnowledge: 'Zero Knowledge',
-    zeroKnowledgeDesc: 'Server only stores encrypted data.',
-    zeroKnowledgeDescLong: 'Server only stores encrypted data. Not even administrators can read your text.',
+    zeroKnowledgeDesc: 'Send messages and attachments are encrypted in your browser.',
+    zeroKnowledgeDescLong: 'Send messages and attachments are encrypted in your browser. Collaborative pages are public to anyone with the link.',
     understood: 'Got it',
     
     // Footer
