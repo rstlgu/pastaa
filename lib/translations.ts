@@ -111,8 +111,8 @@ export const translations = {
     localDecryptionDesc: 'Solo nel tuo browser',
     localDecryptionDescLong: 'Solo chi ha il link può decifrare nel proprio browser',
     zeroKnowledge: 'Zero Knowledge',
-    zeroKnowledgeDesc: 'Il server salva solo dati cifrati.',
-    zeroKnowledgeDescLong: 'Il server salva solo dati cifrati. Nemmeno gli amministratori possono leggere il tuo testo.',
+    zeroKnowledgeDesc: 'Messaggi e allegati di Invia sono cifrati nel browser.',
+    zeroKnowledgeDescLong: 'Messaggi e allegati di Invia sono cifrati nel browser. Le pagine collaborative sono pubbliche per chi conosce il link.',
     understood: 'Ho capito',
     
     // Footer
@@ -187,10 +187,10 @@ export const translations = {
     
     // Landing Sections (New)
     featuresTitle: 'Perché scegliere Pastaa',
-    noDatabase: 'Nessun Database',
-    noDatabaseDesc: 'I dati sono nel link, non sui nostri server',
-    deployWithDocker: 'Deploy con Docker',
-    runCommand: 'Avvia la tua istanza in secondi',
+    noDatabase: 'Scadenza automatica',
+    noDatabaseDesc: 'I contenuti scaduti diventano inaccessibili e vengono eliminati',
+    deployWithDocker: 'Deploy su Cloudflare',
+    runCommand: 'Configura la tua istanza seguendo la guida nel repository',
     
     demoSendTitle: 'Invia Messaggi Cifrati',
     demoSendDesc: 'Scrivi il tuo testo, cifralo localmente e condividi il link. La chiave di decifrazione è nel fragment (#) dell\'URL, quindi il server non la vede mai.',
@@ -390,8 +390,8 @@ export const translations = {
     localDecryptionDesc: 'Only in your browser',
     localDecryptionDescLong: 'Only those with the link can decrypt in their browser',
     zeroKnowledge: 'Zero Knowledge',
-    zeroKnowledgeDesc: 'Server only stores encrypted data.',
-    zeroKnowledgeDescLong: 'Server only stores encrypted data. Not even administrators can read your text.',
+    zeroKnowledgeDesc: 'Send messages and attachments are encrypted in your browser.',
+    zeroKnowledgeDescLong: 'Send messages and attachments are encrypted in your browser. Collaborative pages are public to anyone with the link.',
     understood: 'Got it',
     
     // Footer
@@ -466,10 +466,10 @@ export const translations = {
     
     // Landing Sections (New)
     featuresTitle: 'Why Choose Pastaa',
-    noDatabase: 'No Database',
-    noDatabaseDesc: 'Data lives in the link, not on our servers',
-    deployWithDocker: 'Deploy with Docker',
-    runCommand: 'Get your instance running in seconds',
+    noDatabase: 'Automatic Expiry',
+    noDatabaseDesc: 'Expired content becomes inaccessible and is automatically deleted',
+    deployWithDocker: 'Deploy on Cloudflare',
+    runCommand: 'Configure your instance using the repository guide',
     
     demoSendTitle: 'Send Encrypted Messages',
     demoSendDesc: 'Write your text, encrypt it locally, and share the link. The decryption key is in the URL fragment (#), so the server never sees it.',

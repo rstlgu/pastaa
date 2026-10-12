@@ -1,7 +1,9 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "@/client/navigation";
 
 export default function ShortLinkPage() {
   const params = useParams();
@@ -13,7 +15,7 @@ export default function ShortLinkPage() {
       const hash = window.location.hash;
       
       try {
-        const response = await fetch(`/api/paste/short/${shortId}`);
+        const response = await apiFetch(`/api/paste/short/${shortId}`);
         if (response.ok) {
           const { id } = await response.json();
           router.replace(`/view/${id}${hash}`);

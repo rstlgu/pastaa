@@ -1,7 +1,9 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams } from "@/client/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2, Copy, Share2, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -19,8 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import Link from "next/link";
-import dynamic from 'next/dynamic';
+import { Link } from "@/client/navigation";
+import { lazy } from "react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -46,7 +48,7 @@ import { EditorView } from '@codemirror/view';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration, DecorationSet } from '@codemirror/view';
 
-const CodeMirror = dynamic(() => import('@uiw/react-codemirror'), { ssr: false });
+const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 
 // Funzione helper per ottenere l'estensione del linguaggio
 function getLanguageExtension(language: string) {
@@ -192,7 +194,7 @@ export default function PublicPageEditor() {
   useEffect(() => {
     async function loadPage() {
       try {
-        const response = await fetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
+        const response = await apiFetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
         
         // Controlla se la risposta è ok prima di parsare
         if (!response.ok) {
@@ -299,7 +301,7 @@ export default function PublicPageEditor() {
     setSaved(false);
 
     try {
-      const response = await fetch('/api/public-page', {
+      const response = await apiFetch('/api/public-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -1070,13 +1072,12 @@ export default function PublicPageEditor() {
                           { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
                           { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
                           { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
-                          { label: t('never'), value: -1 },
                         ].map((option) => (
                           <button
                             key={option.value}
                             onClick={async () => {
                               try {
-                                const response = await fetch('/api/public-page', {
+                                const response = await apiFetch('/api/public-page', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ 
@@ -1131,13 +1132,12 @@ export default function PublicPageEditor() {
                         { label: t('duration24Hours'), value: 24 * 60 * 60 * 1000 },
                         { label: t('duration7Days'), value: 7 * 24 * 60 * 60 * 1000 },
                         { label: t('duration30Days'), value: 30 * 24 * 60 * 60 * 1000 },
-                        { label: t('never'), value: -1 },
                       ].map((option) => (
                         <button
                           key={option.value}
                           onClick={async () => {
                             try {
-                              const response = await fetch('/api/public-page', {
+                              const response = await apiFetch('/api/public-page', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 

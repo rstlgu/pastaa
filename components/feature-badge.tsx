@@ -14,7 +14,7 @@ const featureInfo = {
   burn: {
     icon: Flame,
     title: 'Burn After Reading',
-    description: 'Il destinatario dovrà passare il mouse sul testo per rivelarlo. Dopo la lettura completa, il messaggio verrà eliminato automaticamente.',
+    description: 'Il server elimina il messaggio alla prima apertura del link. Gli allegati consentono un solo trasferimento, entro 2 minuti.',
   },
   password: {
     icon: Lock,

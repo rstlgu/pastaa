@@ -16,15 +16,6 @@ interface VerifiedEmailPayload {
   nonce: string;
 }
 
-function getSigningSecret(): string {
-  return (
-    process.env.EMAIL_VERIFICATION_SECRET ||
-    process.env.RESEND_API_KEY ||
-    process.env.TURNSTILE_SECRET_KEY ||
-    "pastaa-dev-email-verification-secret"
-  );
-}
-
 function base64UrlEncode(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
 }
@@ -33,8 +24,8 @@ function base64UrlDecode(value: string): string {
   return Buffer.from(value, "base64url").toString("utf8");
 }
 
-function sign(value: string): string {
-  return createHmac("sha256", getSigningSecret()).update(value).digest("base64url");
+function sign(value: string, secret: string): string {
+  return createHmac("sha256", secret).update(value).digest("base64url");
 }
 
 function safeEqual(left: string, right: string): boolean {
@@ -43,14 +34,14 @@ function safeEqual(left: string, right: string): boolean {
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function createSignedToken(payload: unknown): string {
+function createSignedToken(payload: unknown, secret: string): string {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-  return `${encodedPayload}.${sign(encodedPayload)}`;
+  return `${encodedPayload}.${sign(encodedPayload, secret)}`;
 }
 
-function parseSignedToken<T>(token: string): T | null {
+function parseSignedToken<T>(token: string, secret: string): T | null {
   const [encodedPayload, signature] = token.split(".");
-  if (!encodedPayload || !signature || !safeEqual(sign(encodedPayload), signature)) return null;
+  if (!encodedPayload || !signature || !safeEqual(sign(encodedPayload, secret), signature)) return null;
 
   try {
     return JSON.parse(base64UrlDecode(encodedPayload)) as T;
@@ -67,39 +58,39 @@ export function generateEmailCode(): string {
   return randomInt(100000, 1000000).toString();
 }
 
-export function createEmailChallenge(email: string, code: string): string {
+export function createEmailChallenge(email: string, code: string, secret: string): string {
   const normalizedEmail = normalizeEmail(email);
   const payload: EmailChallengePayload = {
     email: normalizedEmail,
-    codeHash: sign(`${normalizedEmail}:${code}`),
+    codeHash: sign(`${normalizedEmail}:${code}`, secret),
     expiresAt: Date.now() + CHALLENGE_TTL_MS,
     nonce: randomInt(100000000, 999999999).toString(),
   };
 
-  return createSignedToken(payload);
+  return createSignedToken(payload, secret);
 }
 
-export function verifyEmailChallenge(email: string, code: string, token: string): boolean {
+export function verifyEmailChallenge(email: string, code: string, token: string, secret: string): boolean {
   const normalizedEmail = normalizeEmail(email);
-  const payload = parseSignedToken<EmailChallengePayload>(token);
+  const payload = parseSignedToken<EmailChallengePayload>(token, secret);
 
   if (!payload || payload.expiresAt <= Date.now() || payload.email !== normalizedEmail) return false;
-  return safeEqual(payload.codeHash, sign(`${normalizedEmail}:${code.trim()}`));
+  return safeEqual(payload.codeHash, sign(`${normalizedEmail}:${code.trim()}`, secret));
 }
 
-export function createVerifiedEmailToken(email: string): string {
+export function createVerifiedEmailToken(email: string, secret: string): string {
   const payload: VerifiedEmailPayload = {
     email: normalizeEmail(email),
     expiresAt: Date.now() + VERIFIED_EMAIL_TTL_MS,
     nonce: randomInt(100000000, 999999999).toString(),
   };
 
-  return createSignedToken(payload);
+  return createSignedToken(payload, secret);
 }
 
-export function verifyVerifiedEmailToken(email: string, token: string): boolean {
+export function verifyVerifiedEmailToken(email: string, token: string, secret: string): boolean {
   const normalizedEmail = normalizeEmail(email);
-  const payload = parseSignedToken<VerifiedEmailPayload>(token);
+  const payload = parseSignedToken<VerifiedEmailPayload>(token, secret);
 
   return Boolean(payload && payload.expiresAt > Date.now() && payload.email === normalizedEmail);
 }

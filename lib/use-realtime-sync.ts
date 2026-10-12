@@ -1,10 +1,13 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useEffect, useRef, useCallback } from 'react';
 import { getPusherClient } from './pusher';
 
 interface ContentUpdate {
   content: string;
+  refresh?: boolean;
   userId: string;
   editorMode: 'code' | 'docs';
   timestamp: number;
@@ -36,8 +39,13 @@ export function useRealtimeSync({
     channelRef.current = channel;
 
     // Listener per aggiornamenti contenuto
-    channel.bind('content-update', (data: ContentUpdate) => {
-      onUpdate(data.content, data.userId);
+    channel.bind('content-update', async (data: ContentUpdate) => {
+      if (data.refresh) {
+        const response = await apiFetch(`/api/public-page?id=${encodeURIComponent(pageId)}`);
+        if (!response.ok) return;
+        const page = await response.json();
+        if (page.exists) onUpdate(page.content, data.userId);
+      } else onUpdate(data.content, data.userId);
     });
 
     return () => {
@@ -61,7 +69,7 @@ export function useRealtimeSync({
     if (!pageId) return;
 
     try {
-      await fetch(`/api/public-page/${pageId}/broadcast`, {
+      await apiFetch(`/api/public-page/${pageId}/broadcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, userId, editorMode }),

@@ -5,7 +5,7 @@ import { FileText, AlertTriangle, Shield, Ban, Gavel, Scale } from "lucide-react
 import { PastaLogo } from "@/components/pasta-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
-import Link from "next/link";
+import { Link } from "@/client/navigation";
 
 export default function TermsPage() {
   return (

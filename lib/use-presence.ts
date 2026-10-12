@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
+
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { generateFakeName, generateAvatarUrl } from './generate-fake-name';
@@ -51,7 +53,7 @@ export function usePresence({ pageId, enabled = true }: UsePresenceOptions) {
     if (!enabled || !pageId) return;
 
     try {
-      await fetch(`/api/public-page/${pageId}/broadcast-presence`, {
+      await apiFetch(`/api/public-page/${pageId}/broadcast-presence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

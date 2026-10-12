@@ -5,7 +5,7 @@ import { Shield, Lock, Eye, Database, Cookie, Server } from "lucide-react";
 import { PastaLogo } from "@/components/pasta-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GitHubBadge } from "@/components/github-badge";
-import Link from "next/link";
+import { Link } from "@/client/navigation";
 
 export default function PrivacyPage() {
   return (
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
             </div>
             
             <p className="text-muted-foreground">
-              Pastaa non utilizza cookie di tracciamento o profilazione. Utilizziamo solo cookie tecnici strettamente necessari per il funzionamento del servizio (ad esempio, per memorizzare le preferenze di tema scuro/chiaro localmente nel tuo browser).
+              Pastaa non utilizza cookie di profilazione. Le preferenze del tema vengono salvate localmente nel browser. Per prevenire abusi utilizziamo Cloudflare Turnstile e cookie tecnici di sicurezza: Cloudflare può impostare il cookie cf_clearance, mentre Pastaa usa una sessione firmata valida per 20 minuti. Per la verifica Cloudflare riceve informazioni tecniche della connessione, incluso l’indirizzo IP. I contatori del servizio usano un’impronta dell’IP protetta con un segreto e scadono al termine della rispettiva finestra temporale.
             </p>
           </section>
 
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold">Conservazione dei Dati</h2>
             <p className="text-muted-foreground">
-              I contenuti condivisi vengono conservati sul server solo per il tempo necessario alla condivisione. Non conserviamo copie dei contenuti dopo che sono stati eliminati. I dati di presenza per la collaborazione in tempo reale vengono eliminati immediatamente dopo 10 secondi di inattività.
+              I messaggi condivisi scadono entro 7 giorni, le pagine collaborative entro 30 giorni e gli allegati della chat entro 10 minuti. Alla scadenza il servizio blocca subito l’accesso; una pulizia periodica elimina i dati attivi. I backup temporanei del fornitore possono conservare lo storico per un periodo limitato. La scadenza non elimina copie già scaricate dai destinatari.
             </p>
           </section>
 
@@ -198,4 +198,3 @@ export default function PrivacyPage() {
     </div>
   );
 }
-
