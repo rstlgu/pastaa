@@ -32,5 +32,15 @@
   "vars": {
     "APP_URL": "https://pastaa.io",
     "PUSHER_CLUSTER": "eu"
-  }
+  },
+  "routes": [
+    {
+      "pattern": "pastaa.io/*",
+      "zone_id": "f03f43818551aa8b46762e64e606657a"
+    },
+    {
+      "pattern": "chat.pastaa.io/*",
+      "zone_id": "f03f43818551aa8b46762e64e606657a"
+    }
+  ]
 }
